@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Voting System
 
-## Getting Started
+A secure full-stack voting system built with Next.js 14, TypeScript, Prisma, and PostgreSQL.
 
-First, run the development server:
+## Features
 
-```bash
+- 🗳️ Public voting with QR codes
+- 🛡️ Bot protection with Cloudflare Turnstile
+- 👨‍💼 Admin dashboard with analytics
+- 📊 Real-time vote tracking and charts
+- 🔒 Secure authentication
+- 📱 Responsive design
+
+## Quick Setup
+
+### 1. Install Dependencies
+\`\`\`bash
+npm install
+\`\`\`
+
+### 2. Set up Environment Variables
+Copy `.env.example` to `.env.local` and update the values:
+\`\`\`bash
+cp .env.example .env.local
+\`\`\`
+
+**Required variables:**
+- `DATABASE_URL`: Your PostgreSQL connection string
+- `NEXTAUTH_SECRET`: A secure random string
+
+### 3. Set up Database
+\`\`\`bash
+# Generate Prisma client
+npx prisma generate
+
+# Push schema to database
+npx prisma db push
+
+# Seed with sample data
+npm run db:seed
+\`\`\`
+
+### 4. Start Development Server
+\`\`\`bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+\`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000` to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Admin Access
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **URL**: `http://localhost:3000/admin`
+- **Password**: `admin123` (change in production)
 
-## Learn More
+## Team Voting URLs
 
-To learn more about Next.js, take a look at the following resources:
+After seeding, you'll get URLs like:
+- `http://localhost:3000/vote/[teamId]`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Production Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Set up a PostgreSQL database (recommended: Neon)
+2. Update environment variables
+3. Deploy to Vercel
+4. Run database migrations
 
-## Deploy on Vercel
+## Environment Variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `NEXTAUTH_SECRET` | NextAuth secret key | Yes |
+| `NEXTAUTH_URL` | Application URL | Yes |
+| `ADMIN_PASSWORD_HASH` | Bcrypt hash of admin password | Yes |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret | Optional |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key | Optional |

@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id    String @id @default(cuid())
+  name  String
+  track Track
+  votes Vote[]
+
+  @@map("teams")
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  email     String
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([email, teamId])
+  @@map("votes")
+}
+
+enum Track {
+  AI_INNOVATION_PREU
+  AI_ART_PREU
+  AI_TECHNICAL_PREU
+  AI_INNOVATION_UPPERSEC
+  AI_ART_UPPERSEC
+  AI_TECHNICAL_UPPERSEC
+}
