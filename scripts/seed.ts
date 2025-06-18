@@ -19,8 +19,10 @@ async function main() {
 
   console.log("Creating teams...")
   for (const team of teams) {
-    const createdTeam = await prisma.team.create({
-      data: team,
+    const createdTeam = await prisma.team.upsert({
+      where: { name: team.name },
+      update: {},
+      create: team,
     })
     console.log(`✅ Created team: ${createdTeam.name} (${createdTeam.track})`)
   }
