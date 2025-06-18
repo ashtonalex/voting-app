@@ -5,11 +5,11 @@ A secure full-stack voting system built with Next.js 14, TypeScript, Prisma, and
 ## Features
 
 - 🗳️ Public voting with QR codes
-- 🛡️ Bot protection with Cloudflare Turnstile
 - 👨‍💼 Admin dashboard with analytics
 - 📊 Real-time vote tracking and charts
 - 🔒 Secure authentication
 - 📱 Responsive design
+- 🚫 Duplicate vote prevention
 
 ## Quick Setup
 
@@ -57,6 +57,12 @@ Visit `http://localhost:3000` to see the application.
 After seeding, you'll get URLs like:
 - `http://localhost:3000/vote/[teamId]`
 
+## Voting Rules
+
+- Each user can vote up to **2 times per track per email**
+- Duplicate votes for the same team are prevented
+- Vote counts are tracked both server-side and client-side
+
 ## Production Deployment
 
 1. Set up a PostgreSQL database (recommended: Neon)
@@ -72,5 +78,3 @@ After seeding, you'll get URLs like:
 | `NEXTAUTH_SECRET` | NextAuth secret key | Yes |
 | `NEXTAUTH_URL` | Application URL | Yes |
 | `ADMIN_PASSWORD_HASH` | Bcrypt hash of admin password | Yes |
-| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret | Optional |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key | Optional |

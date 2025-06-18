@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import type { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
+import { getAdminPasswordHash } from "@/lib/env"
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -11,24 +12,36 @@ const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.password) return null
+        console.log("Login attempt with password:", credentials?.password ? "provided" : "missing")
 
-        // In production, you should hash your admin password and store it in env
-        // For now, we'll use a simple comparison (replace with bcrypt.compare in production)
-        const adminPasswordHash =
-          process.env.ADMIN_PASSWORD_HASH || "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6ukx.LrUpm" // "admin123"
-
-        const isValid = await bcrypt.compare(credentials.password, adminPasswordHash)
-
-        if (isValid) {
-          return {
-            id: "admin",
-            email: "admin@voting-system.com",
-            name: "Admin",
-          }
+        if (!credentials?.password) {
+          console.log("No password provided")
+          return null
         }
 
-        return null
+        // Get admin password hash using our helper function
+        const adminPasswordHash = getAdminPasswordHash()
+        console.log("Using admin password hash of length:", adminPasswordHash.length)
+
+        try {
+          const isValid = await bcrypt.compare(credentials.password, adminPasswordHash)
+          console.log("Password validation result:", isValid)
+
+          if (isValid) {
+            console.log("Login successful")
+            return {
+              id: "admin",
+              email: "admin@voting-system.com",
+              name: "Admin",
+            }
+          } else {
+            console.log("Invalid password")
+            return null
+          }
+        } catch (error) {
+          console.error("Error during password comparison:", error)
+          return null
+        }
       },
     }),
   ],
@@ -53,6 +66,7 @@ const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
 }
 
 const handler = NextAuth(authOptions)

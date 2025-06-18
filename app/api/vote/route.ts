@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { voteSchema } from "@/lib/validations"
-import { verifyTurnstile } from "@/lib/utils"
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,12 +13,6 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     const validatedData = voteSchema.parse(body)
-
-    // Verify Turnstile token
-    const isValidTurnstile = await verifyTurnstile(validatedData.turnstileToken)
-    if (!isValidTurnstile) {
-      return NextResponse.json({ error: "Invalid verification token" }, { status: 400 })
-    }
 
     // Get team and check if it exists
     const team = await prisma.team.findUnique({
@@ -64,6 +57,7 @@ export async function POST(request: NextRequest) {
       success: true,
       vote,
       voteCount: existingVotes + 1,
+      message: "Vote submitted successfully!",
     })
   } catch (error) {
     console.error("Vote submission error:", error)
