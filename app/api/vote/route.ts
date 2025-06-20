@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     const team = await prisma.team.findUnique({
       where: { id: teamId },
     });
+    });
 
     if (!team) {
       console.log("Team not found:", teamId);
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Check voting limit for this email and track
     const existingVotes = await prisma.vote.count({
       where: {
-        email: validatedData.email,
+        email: email,
         team: {
           track: team.track,
         },
@@ -58,13 +59,15 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+        { status: 400 }
+      );
     }
 
     console.log("Creating vote...");
     // Create the vote
     const vote = await prisma.vote.create({
       data: {
-        email: validatedData.email,
+        email: email,
         teamId: teamId,
       },
       include: {
@@ -78,6 +81,8 @@ export async function POST(request: NextRequest) {
       success: true,
       vote,
       voteCount: existingVotes + 1,
+      message: "Vote submitted successfully!",
+    });
       message: "Vote submitted successfully!",
     });
   } catch (error) {
@@ -94,6 +99,8 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+        { status: 400 }
+      );
     }
 
     return NextResponse.json(
@@ -101,6 +108,8 @@ export async function POST(request: NextRequest) {
         error: "Failed to submit vote",
         details: error instanceof Error ? error.message : "Unknown error",
       },
+      { status: 500 }
+    );
       { status: 500 }
     );
   }
