@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
       data: {
         email: validatedData.email,
         teamId: teamId,
+        trackId: team.track,
       },
       include: {
         team: true,
