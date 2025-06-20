@@ -20,8 +20,7 @@ interface VotingFormProps {
 
 declare global {
   interface Window {
-    turnstile: any
-    turnstileCallback: (token: string) => void
+    turnstileCallback?: (token: string) => void
   }
 }
 
@@ -44,20 +43,10 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
     resolver: zodResolver(voteSchema),
   })
 
-  const refreshVoteCount = async () => {
-    try {
-      const response = await fetch("/api/count?track=" + track)
-      const result = await response.json()
-      if (response.ok) {
-        setVoteCount(result.count)
-        Cookies.set(cookieName, result.count.toString(), { expires: 30 })
-      }
-    } catch (err) {
-      console.error("Failed to refresh vote count")
-    }
-  }
-
   useEffect(() => {
+    const existingCount = Number.parseInt(Cookies.get(cookieName) || "0")
+    setVoteCount(existingCount)
+
     if (typeof window !== "undefined" && !window.turnstile) {
       const script = document.createElement("script")
       script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
@@ -66,12 +55,11 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
       document.body.appendChild(script)
     }
 
+    // ✅ Safe usage of setCaptchaToken in callback
     window.turnstileCallback = (token: string) => {
       setCaptchaToken(token)
     }
-
-    refreshVoteCount()
-  }, [cookieName, track])
+  }, [cookieName])
 
   const onSubmit = async (data: VoteFormData) => {
     if (voteCount >= 2) {
@@ -109,7 +97,9 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
         throw new Error(result.error || "Failed to submit vote")
       }
 
-      await refreshVoteCount()
+      const newCount = result.voteCount
+      Cookies.set(cookieName, newCount.toString(), { expires: 30 })
+      setVoteCount(newCount)
       setSubmitStatus("success")
       reset()
       setCaptchaToken(null)
@@ -142,6 +132,7 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
           {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
         </div>
 
+        {/* CAPTCHA */}
         <div
           className="cf-turnstile"
           data-sitekey={siteKey}
