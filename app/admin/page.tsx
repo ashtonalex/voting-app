@@ -12,6 +12,8 @@ import { Loader2, Download, Trash2, BarChart3 } from "lucide-react"
 import { getTrackDisplayName } from "@/lib/utils"
 import VoteChart from "./vote-chart"
 import DeleteVoteDialog from "./delete-vote-dialog"
+import Cookies from "js-cookie"
+import { getCookieName } from "@/lib/utils"
 
 interface Vote {
   id: string
@@ -102,7 +104,14 @@ export default function AdminDashboard() {
       })
 
       if (response.ok) {
-        fetchVotes() // Refresh data
+        const data = await response.json()
+      
+        if (data.email && data.track && typeof data.updatedCount === "number") {
+          const cookieName = getCookieName(data.track)
+          Cookies.set(cookieName, data.updatedCount.toString(), { expires: 30 })
+        }
+      
+        fetchVotes()
         setDeleteVoteId(null)
       }
     } catch (error) {
