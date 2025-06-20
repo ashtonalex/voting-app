@@ -18,12 +18,21 @@ interface VotingFormProps {
   track: Track
 }
 
+declare global {
+  interface Window {
+    turnstile: any
+    turnstileCallback: (token: string) => void
+  }
+}
+
 export default function VotingForm({ teamId, track }: VotingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
   const [voteCount, setVoteCount] = useState(0)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!
   const cookieName = getCookieName(track)
 
   const {
@@ -36,14 +45,31 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
   })
 
   useEffect(() => {
-    // Check existing vote count from cookies
     const existingCount = Number.parseInt(Cookies.get(cookieName) || "0")
     setVoteCount(existingCount)
+
+    if (typeof window !== "undefined" && !window.turnstile) {
+      const script = document.createElement("script")
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
+      script.async = true
+      script.defer = true
+      document.body.appendChild(script)
+    }
+
+    window.turnstileCallback = (token: string) => {
+      setCaptchaToken(token)
+    }
   }, [cookieName])
 
   const onSubmit = async (data: VoteFormData) => {
     if (voteCount >= 2) {
       setErrorMessage("You have already voted 2 times for this track")
+      setSubmitStatus("error")
+      return
+    }
+
+    if (!captchaToken) {
+      setErrorMessage("Please complete the CAPTCHA")
       setSubmitStatus("error")
       return
     }
@@ -61,6 +87,7 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
         body: JSON.stringify({
           ...data,
           teamId,
+          token: captchaToken,
         }),
       })
 
@@ -70,13 +97,13 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
         throw new Error(result.error || "Failed to submit vote")
       }
 
-      // Update cookie with new vote count
       const newCount = result.voteCount
       Cookies.set(cookieName, newCount.toString(), { expires: 30 })
       setVoteCount(newCount)
-
       setSubmitStatus("success")
       reset()
+      setCaptchaToken(null)
+      window.turnstile?.reset?.()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Failed to submit vote")
       setSubmitStatus("error")
@@ -105,7 +132,14 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
           {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
         </div>
 
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+        {/* CAPTCHA */}
+        <div
+          className="cf-turnstile"
+          data-sitekey={siteKey}
+          data-callback="turnstileCallback"
+        />
+
+        <Button type="submit" disabled={isSubmitting || !captchaToken} className="w-full">
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
