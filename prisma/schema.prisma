@@ -21,6 +21,7 @@ model Vote {
   email     String
   teamId    String
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  trackId   String
   createdAt DateTime @default(now())
 
   @@unique([email, teamId])

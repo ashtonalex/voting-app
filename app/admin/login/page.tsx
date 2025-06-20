@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { signIn, getSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, AlertCircle } from "lucide-react"
+import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react"
 import { adminLoginSchema, type AdminLoginFormData } from "@/lib/validations"
 
 export default function AdminLoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
   const {
@@ -30,18 +31,36 @@ export default function AdminLoginPage() {
     setError("")
 
     try {
+      console.log("Attempting login...")
+
       const result = await signIn("credentials", {
         password: data.password,
         redirect: false,
       })
 
+      console.log("SignIn result:", result)
+
       if (result?.error) {
-        setError("Invalid password")
+        setError("Invalid password. Please try again.")
+        console.log("Login error:", result.error)
+      } else if (result?.ok) {
+        console.log("Login successful, checking session...")
+
+        // Double-check the session
+        const session = await getSession()
+        console.log("Session after login:", session)
+
+        if (session) {
+          router.push("/admin")
+        } else {
+          setError("Login succeeded but session not found. Please try again.")
+        }
       } else {
-        router.push("/admin")
+        setError("Login failed. Please try again.")
       }
     } catch (error) {
-      setError("Login failed")
+      console.error("Login exception:", error)
+      setError("An error occurred during login. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -52,10 +71,35 @@ export default function AdminLoginPage() {
       <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-8">Admin Login</h1>
 
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Default Password:</strong> admin123
+          </p>
+          <p className="text-xs text-blue-600 mt-1">Change this password in production</p>
+        </div>
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" {...register("password")} className="mt-1" />
+            <div className="relative mt-1">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                {...register("password")}
+                placeholder="Enter admin password"
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-400" />
+                )}
+              </button>
+            </div>
             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
           </div>
 
@@ -77,6 +121,10 @@ export default function AdminLoginPage() {
             )}
           </Button>
         </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">Having trouble? Check the console for debug information.</p>
+        </div>
       </div>
     </div>
   )
