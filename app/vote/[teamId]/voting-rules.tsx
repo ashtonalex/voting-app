@@ -1,6 +1,6 @@
 import React from 'react';
 
-const VotingRules = () => {
+const VotingRules: React.FC = () => {
   return (
     <div className="voting-rules">
       <h2>Voting Rules</h2>
