@@ -69,7 +69,11 @@ export default function VoteChart({ data, selectedTrack }: VoteChartProps) {
             interval={0}
             tick={{ fontSize: 12 }}
           />
-          <YAxis tick={{ fontSize: 14 }} />
+          <YAxis
+            tick={{ fontSize: 14 }}
+            allowDecimals={false}
+            tickFormatter={(value) => (Number.isInteger(value) ? value : "")}
+          />
           <Tooltip
             formatter={(value, name, props) => [
               `${value} votes (Rank #${props.payload.rank})`,
