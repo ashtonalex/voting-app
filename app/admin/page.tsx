@@ -61,6 +61,15 @@ export default function AdminDashboard() {
   });
   const [deleteVoteId, setDeleteVoteId] = useState<string | null>(null);
 
+  const trackOptions = Object.values(Track).map((track) => ({
+    value: track,
+    label: getTrackDisplayName(track),
+  }));
+
+  const [selectedTrack, setSelectedTrack] = useState<Track>(
+    trackOptions[0].value
+  );
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
@@ -166,11 +175,6 @@ export default function AdminDashboard() {
     return null;
   }
 
-  const trackOptions = Object.values(Track).map((track) => ({
-    value: track,
-    label: getTrackDisplayName(track),
-  }));
-
   const teamOptions = Array.from(new Set(votes.map((vote) => vote.team))).map(
     (team) => ({
       value: team.id,
@@ -223,7 +227,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Vote Chart */}
+        {/* Vote Chart with Track Selector */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -235,7 +239,25 @@ export default function AdminDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <VoteChart data={voteCounts} />
+            {/* Track selection dropdown */}
+            <div className="mb-4 max-w-xs">
+              <Select
+                value={selectedTrack}
+                onValueChange={(value) => setSelectedTrack(value as Track)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Track" />
+                </SelectTrigger>
+                <SelectContent>
+                  {trackOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <VoteChart data={voteCounts} selectedTrack={selectedTrack} />
           </CardContent>
         </Card>
 
