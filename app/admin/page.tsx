@@ -576,30 +576,62 @@ export default function AdminDashboard() {
                     <th className="text-left p-2">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {votes.map((vote) => (
-                    <tr key={vote.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{vote.email}</td>
-                      <td className="p-2">{vote.team.name}</td>
-                      <td className="p-2">
-                        {getTrackDisplayName(vote.team.track)}
-                      </td>
-                      <td className="p-2">
-                        {new Date(vote.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-2">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setDeleteVoteId(vote.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
               </table>
+              {votes.length > 5 ? (
+                <div className="max-h-80 overflow-y-auto">
+                  <table className="w-full border-collapse">
+                    <tbody>
+                      {votes.map((vote) => (
+                        <tr key={vote.id} className="border-b hover:bg-gray-50">
+                          <td className="p-2">{vote.email}</td>
+                          <td className="p-2">{vote.team.name}</td>
+                          <td className="p-2">
+                            {getTrackDisplayName(vote.team.track)}
+                          </td>
+                          <td className="p-2">
+                            {new Date(vote.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="p-2">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setDeleteVoteId(vote.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <table className="w-full border-collapse">
+                  <tbody>
+                    {votes.map((vote) => (
+                      <tr key={vote.id} className="border-b hover:bg-gray-50">
+                        <td className="p-2">{vote.email}</td>
+                        <td className="p-2">{vote.team.name}</td>
+                        <td className="p-2">
+                          {getTrackDisplayName(vote.team.track)}
+                        </td>
+                        <td className="p-2">
+                          {new Date(vote.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="p-2">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeleteVoteId(vote.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </CardContent>
         </Card>
