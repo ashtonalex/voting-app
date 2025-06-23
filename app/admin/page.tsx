@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Track } from "@prisma/client";
@@ -26,6 +26,17 @@ import VoteChart from "./vote-chart";
 import DeleteVoteDialog from "./delete-vote-dialog";
 import Cookies from "js-cookie";
 import { getCookieName } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 interface Vote {
   id: string;
@@ -60,6 +71,9 @@ export default function AdminDashboard() {
     email: "",
   });
   const [deleteVoteId, setDeleteVoteId] = useState<string | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportTrack, setExportTrack] = useState<string>("all");
+  const [exportTeam, setExportTeam] = useState<string>("all");
 
   const trackOptions = Object.values(Track).map((track) => ({
     value: track,
@@ -122,9 +136,30 @@ export default function AdminDashboard() {
       .slice(0, 3);
   });
 
-  const handleExport = async () => {
+  const filteredExportTeamOptions = useMemo(() => {
+    if (exportTrack && exportTrack !== "all") {
+      const teams = votes
+        .filter((vote) => vote.team.track === exportTrack)
+        .map((vote) => vote.team)
+        .filter(
+          (team, idx, arr) => arr.findIndex((t) => t.id === team.id) === idx
+        ) as { id: string; name: string }[];
+      return teams.map((team) => ({ value: team.id, label: team.name }));
+    } else {
+      const teams = Array.from(new Set(votes.map((vote) => vote.team))) as {
+        id: string;
+        name: string;
+      }[];
+      return teams.map((team) => ({ value: team.id, label: team.name }));
+    }
+  }, [exportTrack, votes]);
+
+  const handleExport = async (track?: string, teamId?: string) => {
     try {
-      const response = await fetch("/api/admin/export");
+      const params = new URLSearchParams();
+      if (track && track !== "all") params.append("track", track);
+      if (teamId && teamId !== "all") params.append("teamId", teamId);
+      const response = await fetch(`/api/admin/export?${params}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -187,10 +222,90 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <Button onClick={handleExport} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => handleExport()}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export All CSV
+            </Button>
+            <AlertDialog
+              open={exportDialogOpen}
+              onOpenChange={setExportDialogOpen}
+            >
+              <AlertDialogTrigger asChild>
+                <Button className="flex items-center gap-2" variant="default">
+                  <Download className="h-4 w-4" />
+                  Export Filtered CSV
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Export Filtered Votes</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Select filters to export only the desired vote data.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4 py-2">
+                  <div>
+                    <label className="block mb-1 font-medium">Track</label>
+                    <Select
+                      value={exportTrack}
+                      onValueChange={(value) => {
+                        setExportTrack(value);
+                        setExportTeam("all");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Tracks" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Tracks</SelectItem>
+                        {trackOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-medium">Team</label>
+                    <Select
+                      value={exportTeam}
+                      onValueChange={setExportTeam}
+                      disabled={filteredExportTeamOptions.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Teams" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Teams</SelectItem>
+                        {filteredExportTeamOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      setExportDialogOpen(false);
+                      handleExport(exportTrack, exportTeam);
+                    }}
+                  >
+                    Export CSV
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
 
         {/* Stats Cards */}
