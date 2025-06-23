@@ -409,48 +409,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Ranked Teams */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Team Rankings
-            </CardTitle>
-            <CardDescription>Teams ranked by vote count</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Rank</th>
-                    <th className="text-left p-2">Team Name</th>
-                    <th className="text-left p-2">Track</th>
-                    <th className="text-left p-2">Votes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {voteCounts.map((team) => (
-                    <tr key={team.teamId} className="border-b hover:bg-gray-50">
-                      <td className="p-2 font-bold">
-                        {team.rank === 1 && "🥇"}
-                        {team.rank === 2 && "🥈"}
-                        {team.rank === 3 && "🥉"}
-                        {team.rank > 3 && `#${team.rank}`}
-                      </td>
-                      <td className="p-2 font-semibold">{team.teamName}</td>
-                      <td className="p-2">{getTrackDisplayName(team.track)}</td>
-                      <td className="p-2 font-bold text-blue-600">
-                        {team.count}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Top Teams by Track */}
         <Card className="mb-8">
           <CardHeader>
@@ -494,6 +452,90 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ranked Teams */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Team Rankings
+            </CardTitle>
+            <CardDescription>Teams ranked by vote count</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              {voteCounts.length > 5 ? (
+                <div className="max-h-80 overflow-y-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Rank</th>
+                        <th className="text-left p-2">Team Name</th>
+                        <th className="text-left p-2">Track</th>
+                        <th className="text-left p-2">Votes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {voteCounts.map((team) => (
+                        <tr
+                          key={team.teamId}
+                          className="border-b hover:bg-gray-50"
+                        >
+                          <td className="p-2 font-bold">
+                            {team.rank === 1 && "🥇"}
+                            {team.rank === 2 && "🥈"}
+                            {team.rank === 3 && "🥉"}
+                            {team.rank > 3 && `#${team.rank}`}
+                          </td>
+                          <td className="p-2 font-semibold">{team.teamName}</td>
+                          <td className="p-2">
+                            {getTrackDisplayName(team.track)}
+                          </td>
+                          <td className="p-2 font-bold text-blue-600">
+                            {team.count}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Rank</th>
+                      <th className="text-left p-2">Team Name</th>
+                      <th className="text-left p-2">Track</th>
+                      <th className="text-left p-2">Votes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {voteCounts.map((team) => (
+                      <tr
+                        key={team.teamId}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        <td className="p-2 font-bold">
+                          {team.rank === 1 && "🥇"}
+                          {team.rank === 2 && "🥈"}
+                          {team.rank === 3 && "🥉"}
+                          {team.rank > 3 && `#${team.rank}`}
+                        </td>
+                        <td className="p-2 font-semibold">{team.teamName}</td>
+                        <td className="p-2">
+                          {getTrackDisplayName(team.track)}
+                        </td>
+                        <td className="p-2 font-bold text-blue-600">
+                          {team.count}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </CardContent>
         </Card>
