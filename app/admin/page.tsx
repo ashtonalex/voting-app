@@ -1,145 +1,182 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { Track } from "@prisma/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Download, Trash2, BarChart3 } from "lucide-react"
-import { getTrackDisplayName } from "@/lib/utils"
-import VoteChart from "./vote-chart"
-import DeleteVoteDialog from "./delete-vote-dialog"
-import Cookies from "js-cookie"
-import { getCookieName } from "@/lib/utils"
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Track } from "@prisma/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Loader2, Download, Trash2, BarChart3 } from "lucide-react";
+import { getTrackDisplayName } from "@/lib/utils";
+import VoteChart from "./vote-chart";
+import DeleteVoteDialog from "./delete-vote-dialog";
+import Cookies from "js-cookie";
+import { getCookieName } from "@/lib/utils";
 
 interface Vote {
-  id: string
-  email: string
-  teamId: string
-  createdAt: string
+  id: string;
+  email: string;
+  teamId: string;
+  createdAt: string;
   team: {
-    id: string
-    name: string
-    track: Track
-  }
+    id: string;
+    name: string;
+    track: Track;
+  };
 }
 
 interface VoteCount {
-  teamId: string
-  teamName: string
-  track: Track
-  count: number
+  teamId: string;
+  teamName: string;
+  track: Track;
+  count: number;
+  rank: number;
 }
 
 export default function AdminDashboard() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [votes, setVotes] = useState<Vote[]>([])
-  const [voteCounts, setVoteCounts] = useState<VoteCount[]>([])
-  const [totalVotes, setTotalVotes] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [votes, setVotes] = useState<Vote[]>([]);
+  const [voteCounts, setVoteCounts] = useState<VoteCount[]>([]);
+  const [totalVotes, setTotalVotes] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     track: "",
     teamId: "",
     email: "",
-  })
-  const [deleteVoteId, setDeleteVoteId] = useState<string | null>(null)
+  });
+  const [deleteVoteId, setDeleteVoteId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "loading") return
+    if (status === "loading") return;
     if (!session) {
-      router.push("/admin/login")
-      return
+      router.push("/admin/login");
+      return;
     }
-    fetchVotes()
-  }, [session, status, router])
+    fetchVotes();
+  }, [session, status, router]);
 
   const fetchVotes = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const params = new URLSearchParams()
-      if (filters.track) params.append("track", filters.track)
-      if (filters.teamId) params.append("teamId", filters.teamId)
-      if (filters.email) params.append("email", filters.email)
+      const params = new URLSearchParams();
+      if (filters.track) params.append("track", filters.track);
+      if (filters.teamId) params.append("teamId", filters.teamId);
+      if (filters.email) params.append("email", filters.email);
 
-      const response = await fetch(`/api/admin/votes?${params}`)
-      const data = await response.json()
+      const response = await fetch(`/api/admin/votes?${params}`);
+      const data = await response.json();
 
       if (response.ok) {
-        setVotes(data.votes)
-        setVoteCounts(data.voteCounts)
-        setTotalVotes(data.totalVotes)
+        setVotes(data.votes);
+        setVoteCounts(data.voteCounts);
+        setTotalVotes(data.totalVotes);
       }
     } catch (error) {
-      console.error("Failed to fetch votes:", error)
+      console.error("Failed to fetch votes:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const sortedTopTeams = [...voteCounts]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // Get top 3 teams for each track
+  const topTeamsByTrack = voteCounts.reduce((acc, team) => {
+    if (!acc[team.track]) {
+      acc[team.track] = [];
+    }
+    acc[team.track].push(team);
+    return acc;
+  }, {} as Record<string, typeof voteCounts>);
+
+  // Sort each track's teams and take top 3
+  Object.keys(topTeamsByTrack).forEach((track) => {
+    topTeamsByTrack[track] = topTeamsByTrack[track]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+  });
 
   const handleExport = async () => {
     try {
-      const response = await fetch("/api/admin/export")
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = "votes.csv"
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      const response = await fetch("/api/admin/export");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "votes.csv";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
-      console.error("Failed to export votes:", error)
+      console.error("Failed to export votes:", error);
     }
-  }
+  };
 
   const handleDeleteVote = async (voteId: string) => {
     try {
       const response = await fetch(`/api/admin/votes/${voteId}`, {
         method: "DELETE",
-      })
+      });
 
       if (response.ok) {
-        const data = await response.json()
-      
+        const data = await response.json();
+
         if (data.email && data.track && typeof data.updatedCount === "number") {
-          const cookieName = getCookieName(data.track)
-          Cookies.set(cookieName, data.updatedCount.toString(), { expires: 30 })
+          const cookieName = getCookieName(data.track);
+          Cookies.set(cookieName, data.updatedCount.toString(), {
+            expires: 30,
+          });
         }
-      
-        fetchVotes()
-        setDeleteVoteId(null)
+
+        fetchVotes();
+        setDeleteVoteId(null);
       }
     } catch (error) {
-      console.error("Failed to delete vote:", error)
+      console.error("Failed to delete vote:", error);
     }
-  }
+  };
 
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
-    )
+    );
   }
 
   if (!session) {
-    return null
+    return null;
   }
 
   const trackOptions = Object.values(Track).map((track) => ({
     value: track,
     label: getTrackDisplayName(track),
-  }))
+  }));
 
-  const teamOptions = Array.from(new Set(votes.map((vote) => vote.team))).map((team) => ({
-    value: team.id,
-    label: team.name,
-  }))
+  const teamOptions = Array.from(new Set(votes.map((vote) => vote.team))).map(
+    (team) => ({
+      value: team.id,
+      label: team.name,
+    })
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -168,7 +205,9 @@ export default function AdminDashboard() {
               <CardTitle>Unique Voters</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{new Set(votes.map((vote) => vote.email)).size}</p>
+              <p className="text-3xl font-bold">
+                {new Set(votes.map((vote) => vote.email)).size}
+              </p>
             </CardContent>
           </Card>
 
@@ -177,7 +216,9 @@ export default function AdminDashboard() {
               <CardTitle>Teams with Votes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{new Set(votes.map((vote) => vote.teamId)).size}</p>
+              <p className="text-3xl font-bold">
+                {new Set(votes.map((vote) => vote.teamId)).size}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -189,10 +230,101 @@ export default function AdminDashboard() {
               <BarChart3 className="h-5 w-5" />
               Votes by Team
             </CardTitle>
-            <CardDescription>Visual representation of vote distribution</CardDescription>
+            <CardDescription>
+              Visual representation of vote distribution
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <VoteChart data={voteCounts} />
+          </CardContent>
+        </Card>
+
+        {/* Ranked Teams */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Team Rankings
+            </CardTitle>
+            <CardDescription>Teams ranked by vote count</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Rank</th>
+                    <th className="text-left p-2">Team Name</th>
+                    <th className="text-left p-2">Track</th>
+                    <th className="text-left p-2">Votes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {voteCounts.map((team) => (
+                    <tr key={team.teamId} className="border-b hover:bg-gray-50">
+                      <td className="p-2 font-bold">
+                        {team.rank === 1 && "🥇"}
+                        {team.rank === 2 && "🥈"}
+                        {team.rank === 3 && "🥉"}
+                        {team.rank > 3 && `#${team.rank}`}
+                      </td>
+                      <td className="p-2 font-semibold">{team.teamName}</td>
+                      <td className="p-2">{getTrackDisplayName(team.track)}</td>
+                      <td className="p-2 font-bold text-blue-600">
+                        {team.count}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Teams by Track */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Top 3 Teams by Track
+            </CardTitle>
+            <CardDescription>
+              Leading teams in each track category
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.entries(topTeamsByTrack).map(([track, teams]) => (
+                <div key={track} className="border rounded-lg p-4">
+                  <h3 className="font-semibold text-lg mb-3 text-blue-600">
+                    {getTrackDisplayName(track as Track)}
+                  </h3>
+                  <div className="space-y-2">
+                    {teams.map((team, index) => (
+                      <div
+                        key={team.teamId}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm">
+                            {index === 0 && "🥇"}
+                            {index === 1 && "🥈"}
+                            {index === 2 && "🥉"}
+                          </span>
+                          <span className="font-medium">{team.teamName}</span>
+                        </div>
+                        <span className="font-bold text-blue-600">
+                          {team.count} votes
+                        </span>
+                      </div>
+                    ))}
+                    {teams.length === 0 && (
+                      <p className="text-gray-500 text-sm">No votes yet</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
@@ -205,7 +337,9 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Select
                 value={filters.track}
-                onValueChange={(value) => setFilters((prev) => ({ ...prev, track: value }))}
+                onValueChange={(value) =>
+                  setFilters((prev) => ({ ...prev, track: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Track" />
@@ -222,7 +356,9 @@ export default function AdminDashboard() {
 
               <Select
                 value={filters.teamId}
-                onValueChange={(value) => setFilters((prev) => ({ ...prev, teamId: value }))}
+                onValueChange={(value) =>
+                  setFilters((prev) => ({ ...prev, teamId: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Team" />
@@ -240,7 +376,9 @@ export default function AdminDashboard() {
               <Input
                 placeholder="Filter by email"
                 value={filters.email}
-                onChange={(e) => setFilters((prev) => ({ ...prev, email: e.target.value }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, email: e.target.value }))
+                }
               />
 
               <Button onClick={fetchVotes}>Apply Filters</Button>
@@ -273,10 +411,18 @@ export default function AdminDashboard() {
                     <tr key={vote.id} className="border-b hover:bg-gray-50">
                       <td className="p-2">{vote.email}</td>
                       <td className="p-2">{vote.team.name}</td>
-                      <td className="p-2">{getTrackDisplayName(vote.team.track)}</td>
-                      <td className="p-2">{new Date(vote.createdAt).toLocaleDateString()}</td>
                       <td className="p-2">
-                        <Button variant="destructive" size="sm" onClick={() => setDeleteVoteId(vote.id)}>
+                        {getTrackDisplayName(vote.team.track)}
+                      </td>
+                      <td className="p-2">
+                        {new Date(vote.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-2">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteVoteId(vote.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </td>
@@ -296,5 +442,5 @@ export default function AdminDashboard() {
         />
       </div>
     </div>
-  )
+  );
 }
