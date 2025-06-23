@@ -11,5 +11,3 @@ const VotingRules: React.FC = () => {
     </div>
   );
 };
-
-export default VotingRules;
