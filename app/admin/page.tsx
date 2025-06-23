@@ -74,6 +74,7 @@ export default function AdminDashboard() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportTrack, setExportTrack] = useState<string>("all");
   const [exportTeam, setExportTeam] = useState<string>("all");
+  const [exportMode, setExportMode] = useState<string>("log");
 
   const trackOptions = Object.values(Track).map((track) => ({
     value: track,
@@ -154,17 +155,33 @@ export default function AdminDashboard() {
     }
   }, [exportTrack, votes]);
 
-  const handleExport = async (track?: string, teamId?: string) => {
+  const handleExport = async (
+    track?: string,
+    teamId?: string,
+    mode: string = "log"
+  ) => {
     try {
       const params = new URLSearchParams();
       if (track && track !== "all") params.append("track", track);
       if (teamId && teamId !== "all") params.append("teamId", teamId);
+      if (mode) params.append("mode", mode);
       const response = await fetch(`/api/admin/export?${params}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
+      let filename = "votes.csv";
+      if (track && track !== "all" && teamId && teamId !== "all") {
+        filename = `votes_track-${track}_team-${teamId}.csv`;
+      } else if (track && track !== "all") {
+        filename = `votes_track-${track}.csv`;
+      } else if (teamId && teamId !== "all") {
+        filename = `votes_team-${teamId}.csv`;
+      }
+      if (mode === "counts") {
+        filename = filename.replace("votes", "vote-counts");
+      }
       const a = document.createElement("a");
       a.href = url;
-      a.download = "votes.csv";
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -245,10 +262,26 @@ export default function AdminDashboard() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Export Filtered Votes</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Select filters to export only the desired vote data.
+                    Select filters and export mode for the vote data.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-4 py-2">
+                  <div>
+                    <label className="block mb-1 font-medium">
+                      Export Mode
+                    </label>
+                    <Select value={exportMode} onValueChange={setExportMode}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="log">Vote Entry Log</SelectItem>
+                        <SelectItem value="counts">
+                          Vote Counts Per Team
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <label className="block mb-1 font-medium">Track</label>
                     <Select
@@ -297,7 +330,7 @@ export default function AdminDashboard() {
                   <AlertDialogAction
                     onClick={() => {
                       setExportDialogOpen(false);
-                      handleExport(exportTrack, exportTeam);
+                      handleExport(exportTrack, exportTeam, exportMode);
                     }}
                   >
                     Export CSV
