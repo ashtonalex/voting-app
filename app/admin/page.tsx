@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Track } from "@prisma/client";
@@ -66,15 +66,19 @@ export default function AdminDashboard() {
   const [totalVotes, setTotalVotes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    track: "",
-    teamId: "",
+    track: "all",
+    teamId: "all",
     email: "",
   });
+  const [filteredVotes, setFilteredVotes] = useState<Vote[]>([]);
   const [deleteVoteId, setDeleteVoteId] = useState<string | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportTrack, setExportTrack] = useState<string>("all");
   const [exportTeam, setExportTeam] = useState<string>("all");
   const [exportMode, setExportMode] = useState<string>("log");
+  const [emailSuggestionsOpen, setEmailSuggestionsOpen] = useState(false);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const trackOptions = Object.values(Track).map((track) => ({
     value: track,
@@ -85,6 +89,130 @@ export default function AdminDashboard() {
     trackOptions[0].value
   );
 
+  // Memoize unique teams grouped by track
+  const teamsByTrack = useMemo(() => {
+    const teams = votes.reduce((acc, vote) => {
+      const { team } = vote;
+      if (!acc[team.track]) {
+        acc[team.track] = new Map();
+      }
+      if (!acc[team.track].has(team.id)) {
+        acc[team.track].set(team.id, team);
+      }
+      return acc;
+    }, {} as Record<Track, Map<string, Vote["team"]>>);
+
+    return Object.entries(teams).reduce((acc, [track, teamsMap]) => {
+      acc[track as Track] = Array.from(teamsMap.values());
+      return acc;
+    }, {} as Record<Track, Vote["team"][]>);
+  }, [votes]);
+
+  // Get available team options based on selected track
+  const availableTeamOptions = useMemo(() => {
+    if (filters.track === "all") return [];
+    return (teamsByTrack[filters.track as Track] || []).map((team) => ({
+      value: team.id,
+      label: team.name,
+    }));
+  }, [filters.track, teamsByTrack]);
+
+  // Unique emails from all votes
+  const uniqueEmails = useMemo(() => {
+    const set = new Set<string>();
+    votes.forEach((vote) => set.add(vote.email));
+    return Array.from(set);
+  }, [votes]);
+
+  // Filtered email suggestions
+  const filteredEmailSuggestions = useMemo(() => {
+    if (!filters.email.trim()) return [];
+    return uniqueEmails
+      .filter((email) =>
+        email.toLowerCase().includes(filters.email.trim().toLowerCase())
+      )
+      .slice(0, 8); // Limit to 8 suggestions
+  }, [filters.email, uniqueEmails]);
+
+  // Handle track change
+  const handleTrackChange = (value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      track: value,
+      teamId: "all", // Reset team selection when track changes
+    }));
+  };
+
+  // Handle team change
+  const handleTeamChange = (value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      teamId: value,
+    }));
+  };
+
+  // Handle email input focus/blur
+  const handleEmailFocus = () => {
+    if (filteredEmailSuggestions.length > 0) setEmailSuggestionsOpen(true);
+  };
+  const handleEmailBlur = () => {
+    setTimeout(() => setEmailSuggestionsOpen(false), 100); // Delay to allow click
+  };
+
+  // Handle email input change
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters((prev) => ({
+      ...prev,
+      email: e.target.value,
+    }));
+    setHighlightedIndex(-1);
+    if (e.target.value.trim() && filteredEmailSuggestions.length > 0) {
+      setEmailSuggestionsOpen(true);
+    } else {
+      setEmailSuggestionsOpen(false);
+    }
+  };
+
+  // Handle suggestion click
+  const handleEmailSuggestionClick = (email: string) => {
+    setFilters((prev) => ({ ...prev, email }));
+    setEmailSuggestionsOpen(false);
+    emailInputRef.current?.blur();
+  };
+
+  // Handle keyboard navigation
+  const handleEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!emailSuggestionsOpen || filteredEmailSuggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((idx) =>
+        Math.min(idx + 1, filteredEmailSuggestions.length - 1)
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((idx) => Math.max(idx - 1, 0));
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleEmailSuggestionClick(filteredEmailSuggestions[highlightedIndex]);
+    }
+  };
+
+  // Apply filters
+  const handleApplyFilters = () => {
+    fetchFilteredVotes(filters);
+  };
+
+  // Reset filters
+  const handleResetFilters = () => {
+    const resetFilters = {
+      track: "all",
+      teamId: "all",
+      email: "",
+    };
+    setFilters(resetFilters);
+    fetchFilteredVotes(resetFilters);
+  };
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
@@ -92,17 +220,13 @@ export default function AdminDashboard() {
       return;
     }
     fetchVotes();
+    fetchFilteredVotes();
   }, [session, status, router]);
 
   const fetchVotes = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (filters.track) params.append("track", filters.track);
-      if (filters.teamId) params.append("teamId", filters.teamId);
-      if (filters.email) params.append("email", filters.email);
-
-      const response = await fetch(`/api/admin/votes?${params}`);
+      const response = await fetch(`/api/admin/votes?applyFilters=false`);
       const data = await response.json();
 
       if (response.ok) {
@@ -114,6 +238,27 @@ export default function AdminDashboard() {
       console.error("Failed to fetch votes:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFilteredVotes = async (currentFilters = filters) => {
+    try {
+      const params = new URLSearchParams();
+      params.append("track", currentFilters.track);
+      params.append("teamId", currentFilters.teamId);
+      if (currentFilters.email.trim()) {
+        params.append("email", currentFilters.email.trim());
+      }
+      params.append("applyFilters", "true");
+
+      const response = await fetch(`/api/admin/votes?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setFilteredVotes(data.votes);
+      }
+    } catch (error) {
+      console.error("Failed to fetch filtered votes:", error);
     }
   };
 
@@ -208,6 +353,7 @@ export default function AdminDashboard() {
         }
 
         fetchVotes();
+        fetchFilteredVotes();
         setDeleteVoteId(null);
       }
     } catch (error) {
@@ -226,13 +372,6 @@ export default function AdminDashboard() {
   if (!session) {
     return null;
   }
-
-  const teamOptions = Array.from(new Set(votes.map((vote) => vote.team))).map(
-    (team) => ({
-      value: team.id,
-      label: team.name,
-    })
-  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -540,60 +679,101 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Filters */}
-        <Card className="mb-8">
+        {/* Filters Card */}
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Filters</CardTitle>
+            <CardTitle>Filter Votes</CardTitle>
+            <CardDescription>Filter the votes table below</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Select
-                value={filters.track}
-                onValueChange={(value) =>
-                  setFilters((prev) => ({ ...prev, track: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Track" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Tracks</SelectItem>
-                  {trackOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Track</label>
+                <Select value={filters.track} onValueChange={handleTrackChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Track" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tracks</SelectItem>
+                    {trackOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select
-                value={filters.teamId}
-                onValueChange={(value) =>
-                  setFilters((prev) => ({ ...prev, teamId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Teams</SelectItem>
-                  {teamOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Team</label>
+                <Select
+                  value={filters.teamId}
+                  onValueChange={handleTeamChange}
+                  disabled={filters.track === "all"}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        filters.track !== "all"
+                          ? "Select Team"
+                          : "Select Track First"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Teams</SelectItem>
+                    {availableTeamOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Input
-                placeholder="Filter by email"
-                value={filters.email}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, email: e.target.value }))
-                }
-              />
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <div className="relative">
+                  <Input
+                    ref={emailInputRef}
+                    placeholder="Filter by email"
+                    value={filters.email}
+                    onChange={handleEmailChange}
+                    onFocus={handleEmailFocus}
+                    onBlur={handleEmailBlur}
+                    onKeyDown={handleEmailKeyDown}
+                    autoComplete="off"
+                  />
+                  {emailSuggestionsOpen &&
+                    filteredEmailSuggestions.length > 0 && (
+                      <ul className="absolute z-10 left-0 right-0 bg-white border border-gray-200 rounded shadow-md mt-1 max-h-48 overflow-y-auto">
+                        {filteredEmailSuggestions.map((email, idx) => (
+                          <li
+                            key={email}
+                            className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
+                              highlightedIndex === idx ? "bg-gray-100" : ""
+                            }`}
+                            onMouseDown={() =>
+                              handleEmailSuggestionClick(email)
+                            }
+                            onMouseEnter={() => setHighlightedIndex(idx)}
+                          >
+                            {email}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                </div>
+              </div>
 
-              <Button onClick={fetchVotes}>Apply Filters</Button>
+              <div className="space-y-2 flex items-end gap-2">
+                <Button onClick={handleApplyFilters} className="flex-1">
+                  Apply Filters
+                </Button>
+                <Button onClick={handleResetFilters} variant="outline">
+                  Reset
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -603,7 +783,12 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle>All Votes</CardTitle>
             <CardDescription>
-              {votes.length} vote{votes.length !== 1 ? "s" : ""} found
+              {filteredVotes.length} vote{filteredVotes.length !== 1 ? "s" : ""}{" "}
+              found
+              {(filters.track !== "all" ||
+                filters.teamId !== "all" ||
+                filters.email) &&
+                " (filtered)"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -619,11 +804,11 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
               </table>
-              {votes.length > 5 ? (
+              {filteredVotes.length > 10 ? (
                 <div className="max-h-80 overflow-y-auto">
                   <table className="w-full border-collapse">
                     <tbody>
-                      {votes.map((vote) => (
+                      {filteredVotes.map((vote) => (
                         <tr key={vote.id} className="border-b hover:bg-gray-50">
                           <td className="p-2">{vote.email}</td>
                           <td className="p-2">{vote.team.name}</td>
@@ -650,7 +835,7 @@ export default function AdminDashboard() {
               ) : (
                 <table className="w-full border-collapse">
                   <tbody>
-                    {votes.map((vote) => (
+                    {filteredVotes.map((vote) => (
                       <tr key={vote.id} className="border-b hover:bg-gray-50">
                         <td className="p-2">{vote.email}</td>
                         <td className="p-2">{vote.team.name}</td>
