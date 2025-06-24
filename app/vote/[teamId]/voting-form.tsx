@@ -1,38 +1,40 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import type { Track } from "@prisma/client"
-import Cookies from "js-cookie"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
-import { voteSchema, type VoteFormData } from "@/lib/validations"
-import { getCookieName } from "@/lib/utils"
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { Track } from "@prisma/client";
+import Cookies from "js-cookie";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { voteSchema, type VoteFormData } from "@/lib/validations";
+import { getCookieName } from "@/lib/utils";
 
 interface VotingFormProps {
-  teamId: string
-  track: Track
+  teamId: string;
+  track: Track;
 }
 
 declare global {
   interface Window {
-    turnstileCallback?: (token: string) => void
+    turnstileCallback?: (token: string) => void;
   }
 }
 
 export default function VotingForm({ teamId, track }: VotingFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
-  const [errorMessage, setErrorMessage] = useState("")
-  const [voteCount, setVoteCount] = useState(0)
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [voteCount, setVoteCount] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!
-  const cookieName = getCookieName(track)
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!;
+  const cookieName = getCookieName(track);
 
   const {
     register,
@@ -41,42 +43,42 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
     reset,
   } = useForm<VoteFormData>({
     resolver: zodResolver(voteSchema),
-  })
+  });
 
   useEffect(() => {
-    const existingCount = Number.parseInt(Cookies.get(cookieName) || "0")
-    setVoteCount(existingCount)
+    const existingCount = Number.parseInt(Cookies.get(cookieName) || "0");
+    setVoteCount(existingCount);
 
     if (typeof window !== "undefined" && !window.turnstile) {
-      const script = document.createElement("script")
-      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
-      script.async = true
-      script.defer = true
-      document.body.appendChild(script)
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
     }
 
     // ✅ Safe usage of setCaptchaToken in callback
     window.turnstileCallback = (token: string) => {
-      setCaptchaToken(token)
-    }
-  }, [cookieName])
+      setCaptchaToken(token);
+    };
+  }, [cookieName]);
 
   const onSubmit = async (data: VoteFormData) => {
     if (voteCount >= 2) {
-      setErrorMessage("You have already voted 2 times for this track")
-      setSubmitStatus("error")
-      return
+      setErrorMessage("You have already voted 2 times for this track");
+      setSubmitStatus("error");
+      return;
     }
 
     if (!captchaToken) {
-      setErrorMessage("Please complete the CAPTCHA")
-      setSubmitStatus("error")
-      return
+      setErrorMessage("Please complete the CAPTCHA");
+      setSubmitStatus("error");
+      return;
     }
 
-    setIsSubmitting(true)
-    setSubmitStatus("idle")
-    setErrorMessage("")
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    setErrorMessage("");
 
     try {
       const response = await fetch("/api/vote", {
@@ -89,47 +91,106 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
           teamId,
           token: captchaToken,
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to submit vote")
+        throw new Error(result.error || "Failed to submit vote");
       }
 
-      const newCount = result.voteCount
-      Cookies.set(cookieName, newCount.toString(), { expires: 30 })
-      setVoteCount(newCount)
-      setSubmitStatus("success")
-      reset()
-      setCaptchaToken(null)
-      window.turnstile?.reset?.()
+      const newCount = result.voteCount;
+      Cookies.set(cookieName, newCount.toString(), { expires: 30 });
+      setVoteCount(newCount);
+      setSubmitStatus("success");
+      reset();
+      setCaptchaToken(null);
+      window.turnstile?.reset?.();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to submit vote")
-      setSubmitStatus("error")
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to submit vote"
+      );
+      setSubmitStatus("error");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   if (voteCount >= 2) {
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          You have already voted 2 times for this track. Thank you for your participation!
+          You have already voted 2 times for this track. Thank you for your
+          participation!
         </AlertDescription>
       </Alert>
-    )
+    );
+  }
+
+  if (submitStatus === "success") {
+    return (
+      <Alert className="border-green-200 bg-green-50">
+        <CheckCircle className="h-4 w-4 text-green-600" />
+        <AlertDescription className="text-green-800">
+          <div className="space-y-2">
+            <p className="font-semibold">🎉 Vote submitted successfully!</p>
+            <p>Thank you for participating in the voting process.</p>
+            <p>
+              You can vote {2 - voteCount} more time
+              {2 - voteCount !== 1 ? "s" : ""} for this track.
+            </p>
+            <p className="text-sm">
+              Please navigate to another team's page to submit another vote.
+            </p>
+          </div>
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
     <div className="space-y-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <h3 className="font-semibold text-blue-900 mb-2">
+          Important Voting Instructions
+        </h3>
+        <ul className="space-y-2 text-sm text-blue-800">
+          <li className="flex items-start">
+            <span className="mr-2">•</span>
+            <span>
+              You are allowed <strong>2 votes per track</strong>
+            </span>
+          </li>
+          <li className="flex items-start">
+            <span className="mr-2">•</span>
+            <span>
+              You can <strong>only vote once per team</strong>
+            </span>
+          </li>
+          <li className="flex items-start">
+            <span className="mr-2">•</span>
+            <span>
+              All votes are <strong>final</strong> and cannot be cancelled or
+              edited after submission
+            </span>
+          </li>
+        </ul>
+      </div>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <Label htmlFor="email">Email Address</Label>
-          <Input id="email" type="email" {...register("email")} className="mt-1" placeholder="your.email@example.com" />
-          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+          <Input
+            id="email"
+            type="email"
+            {...register("email")}
+            className="mt-1"
+            placeholder="your.email@example.com"
+          />
+          {errors.email && (
+            <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+          )}
         </div>
 
         {/* CAPTCHA */}
@@ -139,7 +200,11 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
           data-callback="turnstileCallback"
         />
 
-        <Button type="submit" disabled={isSubmitting || !captchaToken} className="w-full">
+        <Button
+          type="submit"
+          disabled={isSubmitting || !captchaToken}
+          className="w-full"
+        >
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -155,27 +220,14 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
         </p>
       </form>
 
-      {submitStatus === "success" && (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            <div className="space-y-2">
-              <p className="font-semibold">🎉 Vote submitted successfully!</p>
-              <p>Thank you for participating in the voting process.</p>
-              <p>
-                You can vote {2 - voteCount} more time{2 - voteCount !== 1 ? "s" : ""} for this track.
-              </p>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
       {submitStatus === "error" && (
         <Alert className="border-red-200 bg-red-50">
           <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">{errorMessage}</AlertDescription>
+          <AlertDescription className="text-red-800">
+            {errorMessage}
+          </AlertDescription>
         </Alert>
       )}
     </div>
-  )
+  );
 }
