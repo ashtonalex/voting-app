@@ -11,11 +11,42 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   }
 
   try {
+    // Fetch the vote to extract email and track before deleting
+    const vote = await prisma.vote.findUnique({
+      where: { id: params.id },
+      include: {
+        team: true,
+      },
+    })
+
+    if (!vote) {
+      return NextResponse.json({ error: "Vote not found" }, { status: 404 })
+    }
+
+    const { email } = vote
+    const track = vote.team.track
+
+    // Delete the vote
     await prisma.vote.delete({
       where: { id: params.id },
     })
 
-    return NextResponse.json({ success: true })
+    // Re-count remaining votes for this email and track
+    const updatedCount = await prisma.vote.count({
+      where: {
+        email,
+        team: {
+          track,
+        },
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      email,
+      track,
+      updatedCount,
+    })
   } catch (error) {
     console.error("Failed to delete vote:", error)
     return NextResponse.json({ error: "Failed to delete vote" }, { status: 500 })
