@@ -31,43 +31,35 @@ export default function AdminLoginPage() {
     setError("")
 
     try {
-      console.log("[LOGIN] Starting login attempt with password:", data.password)
+      console.log("Attempting login...")
 
       const result = await signIn("credentials", {
         password: data.password,
         redirect: false,
       })
 
-      console.log("[LOGIN] SignIn result:", {
-        ok: result?.ok,
-        error: result?.error,
-        status: result?.status,
-        url: result?.url
-      })
+      console.log("SignIn result:", result)
 
       if (result?.error) {
         setError("Invalid password. Please try again.")
-        console.log("[LOGIN] Login error:", result.error)
+        console.log("Login error:", result.error)
       } else if (result?.ok) {
-        console.log("[LOGIN] Login successful, checking session...")
+        console.log("Login successful, checking session...")
 
         // Double-check the session
         const session = await getSession()
-        console.log("[LOGIN] Session after login:", session)
+        console.log("Session after login:", session)
 
         if (session) {
-          console.log("[LOGIN] Session found, redirecting to admin page...")
           router.push("/admin")
         } else {
-          console.log("[LOGIN] No session found after successful login")
           setError("Login succeeded but session not found. Please try again.")
         }
       } else {
-        console.log("[LOGIN] Login failed without error")
         setError("Login failed. Please try again.")
       }
     } catch (error) {
-      console.error("[LOGIN] Login exception:", error)
+      console.error("Login exception:", error)
       setError("An error occurred during login. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -85,6 +77,7 @@ export default function AdminLoginPage() {
           </p>
           <p className="text-xs text-blue-600 mt-1">Change this password in production</p>
         </div>
+
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
@@ -108,6 +101,7 @@ export default function AdminLoginPage() {
                 )}
               </button>
             </div>
+
             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
           </div>
 
