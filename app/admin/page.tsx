@@ -37,6 +37,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import Link from "next/link";
 
 interface Vote {
   id: string;
@@ -379,6 +380,9 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <div className="flex gap-2">
+            <Button asChild className="font-semibold" variant="default">
+              <Link href="/qr/production">View QR Codes (Production)</Link>
+            </Button>
             <Button
               onClick={() => handleExport()}
               variant="outline"
