@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2, Download, Trash2, BarChart3 } from "lucide-react";
-import { getTrackDisplayName } from "@/lib/utils";
+import { getTrackDisplayName, sanitizeTeamName } from "@/lib/utils";
 import VoteChart from "./vote-chart";
 import DeleteVoteDialog from "./delete-vote-dialog";
 import Cookies from "js-cookie";
