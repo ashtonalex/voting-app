@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { voteSchema, type VoteFormData } from "@/lib/validations";
-import { getCookieName } from "@/lib/utils";
+import { getVotesByTrackCookieName } from "@/lib/utils";
 
 interface VotingFormProps {
   teamId: string;
@@ -24,17 +24,22 @@ declare global {
   }
 }
 
+const VOTE_LIMIT_PER_TRACK = 2;
+
 export default function VotingForm({ teamId, track }: VotingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [voteCount, setVoteCount] = useState(0);
+  const [votesForTrack, setVotesForTrack] = useState<string[]>([]);
+  const [hasVotedForThisTeam, setHasVotedForThisTeam] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!;
-  const cookieName = getCookieName(track);
+  const votesByTrackCookieName = getVotesByTrackCookieName(track);
+
+  const votesRemaining = VOTE_LIMIT_PER_TRACK - votesForTrack.length;
 
   const {
     register,
@@ -46,8 +51,16 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
   });
 
   useEffect(() => {
-    const existingCount = Number.parseInt(Cookies.get(cookieName) || "0");
-    setVoteCount(existingCount);
+    // Read the cookie for this track
+    let votes: string[] = [];
+    try {
+      const cookieVal = Cookies.get(votesByTrackCookieName);
+      if (cookieVal) {
+        votes = JSON.parse(cookieVal);
+      }
+    } catch {}
+    setVotesForTrack(Array.isArray(votes) ? votes : []);
+    setHasVotedForThisTeam(votes.includes(teamId));
 
     if (typeof window !== "undefined" && !window.turnstile) {
       const script = document.createElement("script");
@@ -57,19 +70,22 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
       document.body.appendChild(script);
     }
 
-    // ✅ Safe usage of setCaptchaToken in callback
     window.turnstileCallback = (token: string) => {
       setCaptchaToken(token);
     };
-  }, [cookieName]);
+  }, [votesByTrackCookieName, teamId]);
 
   const onSubmit = async (data: VoteFormData) => {
-    if (voteCount >= 2) {
-      setErrorMessage("You have already voted 2 times for this track");
+    if (hasVotedForThisTeam) {
+      setErrorMessage("You have already voted for this team in this track");
       setSubmitStatus("error");
       return;
     }
-
+    if (votesForTrack.length >= VOTE_LIMIT_PER_TRACK) {
+      setErrorMessage("You have already used all your votes for this track");
+      setSubmitStatus("error");
+      return;
+    }
     if (!captchaToken) {
       setErrorMessage("Please complete the CAPTCHA");
       setSubmitStatus("error");
@@ -99,9 +115,13 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
         throw new Error(result.error || "Failed to submit vote");
       }
 
-      const newCount = result.voteCount;
-      Cookies.set(cookieName, newCount.toString(), { expires: 30 });
-      setVoteCount(newCount);
+      // Update the cookie for this track
+      const updatedVotes = [...votesForTrack, teamId];
+      Cookies.set(votesByTrackCookieName, JSON.stringify(updatedVotes), {
+        expires: 30,
+      });
+      setVotesForTrack(updatedVotes);
+      setHasVotedForThisTeam(true);
       setSubmitStatus("success");
       reset();
       setCaptchaToken(null);
@@ -116,34 +136,38 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
     }
   };
 
-  if (voteCount >= 2) {
-    return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          You have already voted 2 times for this track. Thank you for your
-          participation!
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (submitStatus === "success") {
+  // If user has voted for this team, show persistent success message
+  if (hasVotedForThisTeam) {
+    // Use the latest votes array from state, but if just submitted, ensure the count is correct
+    let votesCount = votesForTrack.includes(teamId)
+      ? votesForTrack.length
+      : votesForTrack.length + 1;
+    let votesLeft = VOTE_LIMIT_PER_TRACK - votesCount;
+    if (votesLeft < 0) votesLeft = 0;
     return (
       <Alert className="border-green-200 bg-green-50">
         <CheckCircle className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-green-800">
           <div className="space-y-2">
-            <p className="font-semibold">🎉 Vote submitted successfully!</p>
+            <p className="font-semibold">✅ Vote submitted!</p>
             <p>Thank you for participating in the voting process.</p>
-            <p>
-              You can vote {2 - voteCount} more time
-              {2 - voteCount !== 1 ? "s" : ""} for this track.
-            </p>
             <p className="text-sm">
-              Please navigate to another team's page to submit another vote.
+              Votes remaining for this track: {votesLeft}
             </p>
           </div>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // If user has used all votes for this track, show disabled state
+  if (votesForTrack.length >= VOTE_LIMIT_PER_TRACK) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          You have already used all your votes for this track. Thank you for
+          your participation!
         </AlertDescription>
       </Alert>
     );
@@ -214,9 +238,8 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
             "Submit Vote"
           )}
         </Button>
-
         <p className="text-sm text-gray-500 text-center">
-          You can vote up to 2 times per track. Current votes: {voteCount}/2
+          Votes remaining for this track: {votesRemaining}
         </p>
       </form>
 
