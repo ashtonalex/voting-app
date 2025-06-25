@@ -1,12 +1,16 @@
 import path from "path";
 import fs from "fs";
 import { teamTrackMap, allTracks } from "@/lib/team-track-map";
-import { getTrackDisplayName } from "@/lib/utils";
 import QrTrackSelector from "./QrTrackSelector";
 
-const trackDisplayNames = Object.fromEntries(
-  allTracks.map((track) => [track, getTrackDisplayName(track)])
-);
+const trackDisplayNames = {
+  AI_INNOVATION_PREU: "AI Innovation (Pre-University)",
+  AI_ART_PREU: "AI Art (Pre-University)",
+  AI_TECHNICAL_PREU: "AI Technical (Pre-University)",
+  AI_INNOVATION_UPPERSEC: "AI Innovation (Upper Secondary)",
+  AI_ART_UPPERSEC: "AI Art (Upper Secondary)",
+  AI_TECHNICAL_UPPERSEC: "AI Technical (Upper Secondary)",
+};
 
 function getTeamUrlMap() {
   const filePath = path.join(process.cwd(), "team-url-map.json");
