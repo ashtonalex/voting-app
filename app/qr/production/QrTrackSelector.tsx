@@ -12,6 +12,7 @@ import {
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import QRCode from "qrcode";
+import { SkeletonBox } from "@/components/ui/skeleton";
 
 const QRCodeReact = dynamic(() => import("react-qr-code"), { ssr: false });
 
@@ -19,12 +20,14 @@ interface QrTrackSelectorProps {
   allTracks: string[];
   trackDisplayNames: Record<string, string>;
   teamsByTrack: Record<string, { name: string; url: string }[]>;
+  loading?: boolean;
 }
 
 export default function QrTrackSelector({
   allTracks,
   trackDisplayNames,
   teamsByTrack,
+  loading = false,
 }: QrTrackSelectorProps) {
   const [selectedTrack, setSelectedTrack] = useState(allTracks[0]);
   const [downloading, setDownloading] = useState(false);
@@ -96,6 +99,29 @@ export default function QrTrackSelector({
     }
     doc.save("qr-codes.pdf");
     setDownloading(false);
+  }
+
+  if (loading) {
+    return (
+      <>
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
+          <SkeletonBox height="h-10" width="w-48" />
+          <SkeletonBox height="h-10" width="w-72" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="flex flex-col items-center p-4 shadow border rounded-xl bg-white"
+            >
+              <SkeletonBox height="h-32" width="w-32" className="mb-4" />
+              <SkeletonBox height="h-5" width="w-24" className="mb-2" />
+              <SkeletonBox height="h-4" width="w-32" />
+            </div>
+          ))}
+        </div>
+      </>
+    );
   }
 
   return (

@@ -38,6 +38,11 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
+import {
+  SkeletonBox,
+  SkeletonText,
+  SkeletonSpinner,
+} from "@/components/ui/skeleton";
 
 interface Vote {
   id: string;
@@ -367,8 +372,124 @@ export default function AdminDashboard() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
+        <SkeletonSpinner size="h-12 w-12" className="mb-8" />
+        <div className="w-full max-w-7xl space-y-8">
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-6 bg-white rounded-lg shadow">
+                <SkeletonBox height="h-8" width="w-1/2" className="mb-4" />
+                <SkeletonBox height="h-10" width="w-1/3" />
+              </div>
+            ))}
+          </div>
+          {/* Vote Chart Skeleton */}
+          <div className="mb-8 p-6 bg-white rounded-lg shadow">
+            <SkeletonBox height="h-6" width="w-1/3" className="mb-2" />
+            <SkeletonBox height="h-4" width="w-1/4" className="mb-4" />
+            <div className="h-96 w-full flex items-center justify-center">
+              <SkeletonBox height="h-80" width="w-full" />
+            </div>
+          </div>
+          {/* Top Teams by Track Skeleton */}
+          <div className="mb-8 p-6 bg-white rounded-lg shadow">
+            <SkeletonBox height="h-6" width="w-1/3" className="mb-2" />
+            <SkeletonBox height="h-4" width="w-1/4" className="mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="border rounded-lg p-4">
+                  <SkeletonBox height="h-5" width="w-2/3" className="mb-3" />
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, j) => (
+                      <div
+                        key={j}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                      >
+                        <SkeletonBox height="h-4" width="w-1/4" />
+                        <SkeletonBox height="h-4" width="w-1/4" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Team Rankings Table Skeleton */}
+          <div className="mb-8 p-6 bg-white rounded-lg shadow">
+            <SkeletonBox height="h-6" width="w-1/3" className="mb-2" />
+            <SkeletonBox height="h-4" width="w-1/4" className="mb-4" />
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Rank</th>
+                    <th className="text-left p-2">Team Name</th>
+                    <th className="text-left p-2">Track</th>
+                    <th className="text-left p-2">Votes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(5)].map((_, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-8" />
+                      </td>
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-24" />
+                      </td>
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-20" />
+                      </td>
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-10" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {/* All Votes Table Skeleton */}
+          <div className="p-6 bg-white rounded-lg shadow">
+            <SkeletonBox height="h-6" width="w-1/3" className="mb-2" />
+            <SkeletonBox height="h-4" width="w-1/4" className="mb-4" />
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Email</th>
+                    <th className="text-left p-2">Team</th>
+                    <th className="text-left p-2">Track</th>
+                    <th className="text-left p-2">Date</th>
+                    <th className="text-left p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(5)].map((_, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-32" />
+                      </td>
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-24" />
+                      </td>
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-20" />
+                      </td>
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-16" />
+                      </td>
+                      <td className="p-2">
+                        <SkeletonBox height="h-4" width="w-10" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
