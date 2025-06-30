@@ -51,6 +51,7 @@ import {
   SkeletonSpinner,
 } from "@/components/ui/skeleton";
 import VoteTimelineCard from "./vote-timeline-card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs";
 
 interface Vote {
   id: string;
@@ -70,17 +71,6 @@ interface VoteCount {
   track: Track;
   count: number;
   rank: number;
-}
-
-function useDefaultOpen() {
-  // Collapse by default on mobile, open on desktop
-  const [open, setOpen] = useState(true);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setOpen(window.innerWidth >= 768); // md breakpoint
-    }
-  }, []);
-  return [open, setOpen] as const;
 }
 
 export default function AdminDashboard() {
@@ -104,7 +94,6 @@ export default function AdminDashboard() {
   const [emailSuggestionsOpen, setEmailSuggestionsOpen] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [votesByTeamOpen, setVotesByTeamOpen] = useDefaultOpen();
 
   const trackOptions = Object.values(Track).map((track) => ({
     value: track,
@@ -662,57 +651,65 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Vote Timeline Graph */}
-        <VoteTimelineCard />
-
-        {/* Vote Chart with Track Selector */}
-        <Card className="mb-8">
-          <CardHeader
-            className="flex flex-row items-center justify-between cursor-pointer select-none"
-            onClick={() => setVotesByTeamOpen((v) => !v)}
-          >
-            <div className="flex items-center gap-2">
-              {votesByTeamOpen ? (
-                <ChevronDown className="h-5 w-5 transition-transform" />
-              ) : (
-                <ChevronRight className="h-5 w-5 transition-transform" />
-              )}
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Votes by Team
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <div
-            className={`overflow-hidden transition-all duration-300 ${
-              votesByTeamOpen
-                ? "max-h-[1000px] opacity-100"
-                : "max-h-0 opacity-0 pointer-events-none"
-            }`}
-          >
-            <CardContent>
-              {/* Track selection dropdown */}
-              <div className="mb-4 max-w-xs">
-                <Select
-                  value={selectedTrack}
-                  onValueChange={(value) => setSelectedTrack(value as Track)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Track" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trackOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <VoteChart data={voteCounts} selectedTrack={selectedTrack} />
-            </CardContent>
-          </div>
-        </Card>
+        {/* Chart Section Tabs */}
+        <Tabs defaultValue="timeline" className="w-full mb-8">
+          <TabsList className="flex gap-2 bg-gray-100 rounded-lg p-1 mb-4">
+            <TabsTrigger
+              value="timeline"
+              className="px-4 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow font-semibold"
+            >
+              Vote Timeline
+            </TabsTrigger>
+            <TabsTrigger
+              value="team"
+              className="px-4 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow font-semibold"
+            >
+              Votes by Team
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="timeline">
+            <VoteTimelineCard />
+          </TabsContent>
+          <TabsContent value="team">
+            <Card className="mb-8">
+              <CardHeader>
+                <div className="flex items-center justify-between mb-4 gap-2">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    <CardTitle className="text-lg font-semibold">
+                      Votes by Team
+                    </CardTitle>
+                  </div>
+                  <div className="max-w-xs w-full">
+                    <Select
+                      value={selectedTrack}
+                      onValueChange={(value) =>
+                        setSelectedTrack(value as Track)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Track" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {trackOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <CardDescription className="mb-2">
+                  Visual representation of vote distribution by teams
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <VoteChart data={voteCounts} selectedTrack={selectedTrack} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Top Teams by Track */}
         <Card className="mb-8">
