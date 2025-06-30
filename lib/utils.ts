@@ -44,3 +44,7 @@ export function sanitizeTeamNameForSlug(name: string): string {
     .replace(/[^\w\d_]/g, "") // remove other non-URL-safe chars
     .toLowerCase(); // normalize case
 }
+
+export function sanitizeTeamName(name: string): string {
+  return sanitizeTeamNameForSlug(name);
+}
