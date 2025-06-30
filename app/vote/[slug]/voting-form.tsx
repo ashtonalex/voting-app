@@ -75,6 +75,19 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
     };
   }, [votesByTrackCookieName, teamId]);
 
+  // Helper to refresh votes from cookie
+  function refreshVotesForTrack() {
+    let votes: string[] = [];
+    try {
+      const cookieVal = Cookies.get(votesByTrackCookieName);
+      if (cookieVal) {
+        votes = JSON.parse(cookieVal);
+      }
+    } catch {}
+    setVotesForTrack(Array.isArray(votes) ? votes : []);
+    setHasVotedForThisTeam(votes.includes(teamId));
+  }
+
   const onSubmit = async (data: VoteFormData) => {
     if (hasVotedForThisTeam) {
       setErrorMessage("You have already voted for this team in this track");
@@ -120,8 +133,8 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
       Cookies.set(votesByTrackCookieName, JSON.stringify(updatedVotes), {
         expires: 30,
       });
-      setVotesForTrack(updatedVotes);
-      setHasVotedForThisTeam(true);
+      // Instead of optimistic update, re-read the cookie and update state
+      refreshVotesForTrack();
       setSubmitStatus("success");
       reset();
       setCaptchaToken(null);
