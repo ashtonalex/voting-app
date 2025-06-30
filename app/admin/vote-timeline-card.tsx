@@ -20,22 +20,11 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 
 interface TimelinePoint {
   time: string;
   count: number;
-}
-
-function useDefaultOpen() {
-  // Collapse by default on mobile, open on desktop
-  const [open, setOpen] = useState(true);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setOpen(window.innerWidth >= 768); // md breakpoint
-    }
-  }, []);
-  return [open, setOpen] as const;
 }
 
 export default function VoteTimelineCard() {
@@ -43,13 +32,22 @@ export default function VoteTimelineCard() {
   const [granularity, setGranularity] = useState<"hour" | "day">("hour");
   const [loading, setLoading] = useState(true);
   const [brushIndex, setBrushIndex] = useState<[number, number] | null>(null);
-  const [open, setOpen] = useDefaultOpen();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     fetch(`/api/admin/votes/timeline?granularity=${granularity}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+        return res.json();
+      })
       .then((res) => setData(res.timeline || []))
+      .catch((err) => {
+        setError("Failed to load vote timeline");
+        setData([]);
+        console.error("Vote timeline fetch error:", err);
+      })
       .finally(() => setLoading(false));
   }, [granularity]);
 
@@ -87,28 +85,15 @@ export default function VoteTimelineCard() {
 
   return (
     <Card className="mb-8">
-      <CardHeader
-        className="flex flex-row items-center justify-between cursor-pointer select-none"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <div className="flex items-center gap-2">
-          {open ? (
-            <ChevronDown className="h-5 w-5 transition-transform" />
-          ) : (
-            <ChevronRight className="h-5 w-5 transition-transform" />
-          )}
-          <CardTitle>Vote Timeline</CardTitle>
-        </div>
-      </CardHeader>
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          open
-            ? "max-h-[1000px] opacity-100"
-            : "max-h-0 opacity-0 pointer-events-none"
-        }`}
-      >
-        <CardContent>
-          <div className="mt-2 max-w-xs">
+      <CardHeader>
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            <CardTitle className="text-lg font-semibold">
+              Vote Timeline
+            </CardTitle>
+          </div>
+          <div className="max-w-xs w-full">
             <Select
               value={granularity}
               onValueChange={(v) => {
@@ -125,73 +110,81 @@ export default function VoteTimelineCard() {
               </SelectContent>
             </Select>
           </div>
-          <div className="mt-2 text-sm text-gray-600">
-            <span className="font-semibold">Total votes in view: </span>
-            <span className="font-mono">{totalVotes}</span>
+        </div>
+        <p className="text-sm text-gray-500 mb-2">
+          Visual representation of vote distribution by chronology
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="mt-2 text-sm text-gray-600">
+          <span className="font-semibold">Total votes in view: </span>
+          <span className="font-mono">{totalVotes}</span>
+        </div>
+        {error ? (
+          <div className="h-80 flex items-center justify-center text-red-500">
+            {error}
           </div>
-          {loading ? (
-            <div className="h-80 flex items-center justify-center text-gray-500">
-              Loading...
-            </div>
-          ) : data.length === 0 ? (
-            <div className="h-80 flex items-center justify-center text-gray-500">
-              No vote data
-            </div>
-          ) : (
-            <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={data}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="time"
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={0}
+        ) : loading ? (
+          <div className="h-80 flex items-center justify-center text-gray-500">
+            Loading...
+          </div>
+        ) : data.length === 0 ? (
+          <div className="h-80 flex items-center justify-center text-gray-500">
+            No vote data
+          </div>
+        ) : (
+          <div className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={data}
+                margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="time"
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
+                />
+                <YAxis allowDecimals={false} tick={{ fontSize: 14 }} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#8884d8"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                {peak && data.length > 0 && (
+                  <ReferenceDot
+                    x={peak.time}
+                    y={peak.count}
+                    r={8}
+                    fill="#f43f5e"
+                    stroke="none"
+                    label={{
+                      value: `Peak (${peak.count})`,
+                      position: "top",
+                      fontSize: 12,
+                      fill: "#f43f5e",
+                    }}
                   />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 14 }} />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke="#8884d8"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  {/* Peak marker */}
-                  {peak && (
-                    <ReferenceDot
-                      x={peak.time}
-                      y={peak.count}
-                      r={8}
-                      fill="#f43f5e"
-                      stroke="none"
-                      label={{
-                        value: `Peak (${peak.count})`,
-                        position: "top",
-                        fontSize: 12,
-                        fill: "#f43f5e",
-                      }}
-                    />
-                  )}
-                  {/* Zoom/pan controls */}
-                  <Brush
-                    dataKey="time"
-                    height={24}
-                    stroke="#8884d8"
-                    travellerWidth={12}
-                    onChange={handleBrushChange}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </div>
+                )}
+                {/* Zoom/pan controls */}
+                <Brush
+                  dataKey="time"
+                  height={24}
+                  stroke="#8884d8"
+                  travellerWidth={12}
+                  onChange={handleBrushChange}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }
