@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Track } from "@prisma/client";
@@ -214,6 +214,30 @@ export default function AdminDashboard() {
     fetchFilteredVotes(resetFilters);
   };
 
+  const fetchFilteredVotes = useCallback(
+    async (currentFilters = filters) => {
+      try {
+        const params = new URLSearchParams();
+        params.append("track", currentFilters.track);
+        params.append("teamId", currentFilters.teamId);
+        if (currentFilters.email.trim()) {
+          params.append("email", currentFilters.email.trim());
+        }
+        params.append("applyFilters", "true");
+
+        const response = await fetch(`/api/admin/votes?${params}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          setFilteredVotes(data.votes);
+        }
+      } catch (error) {
+        console.error("Failed to fetch filtered votes:", error);
+      }
+    },
+    [filters]
+  );
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
@@ -222,7 +246,7 @@ export default function AdminDashboard() {
     }
     fetchVotes();
     fetchFilteredVotes();
-  }, [session, status, router]);
+  }, [session, status, router, fetchFilteredVotes]);
 
   const fetchVotes = async () => {
     setLoading(true);
@@ -239,27 +263,6 @@ export default function AdminDashboard() {
       console.error("Failed to fetch votes:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchFilteredVotes = async (currentFilters = filters) => {
-    try {
-      const params = new URLSearchParams();
-      params.append("track", currentFilters.track);
-      params.append("teamId", currentFilters.teamId);
-      if (currentFilters.email.trim()) {
-        params.append("email", currentFilters.email.trim());
-      }
-      params.append("applyFilters", "true");
-
-      const response = await fetch(`/api/admin/votes?${params}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setFilteredVotes(data.votes);
-      }
-    } catch (error) {
-      console.error("Failed to fetch filtered votes:", error);
     }
   };
 
