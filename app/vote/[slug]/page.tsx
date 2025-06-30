@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { getTrackDisplayName, sanitizeTeamName } from "@/lib/utils";
+import { getTrackDisplayName, sanitizeTeamNameForSlug } from "@/lib/utils";
 import VotingForm from "./voting-form";
 
 interface VotePageProps {
@@ -12,7 +12,9 @@ interface VotePageProps {
 export default async function VotePage({ params }: VotePageProps) {
   // Find the team by matching the sanitized name
   const teams = await prisma.team.findMany();
-  const team = teams.find((t) => sanitizeTeamName(t.name) === params.slug);
+  const team = teams.find(
+    (t) => sanitizeTeamNameForSlug(t.name) === params.slug
+  );
 
   if (!team) {
     notFound();

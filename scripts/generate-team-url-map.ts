@@ -1,5 +1,5 @@
 import { prisma } from "../lib/db";
-import { sanitizeTeamName } from "../lib/utils";
+import { sanitizeTeamNameForSlug } from "../lib/utils";
 import fs from "fs";
 import path from "path";
 
@@ -14,7 +14,7 @@ async function main() {
   const usedSlugs = new Set<string>();
 
   for (const team of teams) {
-    const slug = sanitizeTeamName(team.name);
+    const slug = sanitizeTeamNameForSlug(team.name);
     if (usedSlugs.has(slug)) {
       throw new Error(`Slug collision detected for slug: ${slug}`);
     }

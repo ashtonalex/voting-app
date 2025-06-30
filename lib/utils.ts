@@ -35,9 +35,16 @@ export function getVotesByTrackCookieName(track: Track): string {
  * - Whitespace becomes _
  * - All other non-alphanumeric characters become their Unicode code point (e.g., & -> \u0026)
  */
+export function sanitizeTeamNameForSlug(name: string): string {
+  return name
+    .replace(/[\\\/]/g, "") // remove slashes
+    .replace(/灵感菇/g, "") // remove problematic unicode
+    .replace(/\+/g, "") // remove '+' signs
+    .replace(/\s+/g, "_") // replace whitespace with underscores
+    .replace(/[^\w\d_]/g, "") // remove other non-URL-safe chars
+    .toLowerCase(); // normalize case
+}
+
 export function sanitizeTeamName(name: string): string {
-  return name.replace(/\s/g, "_").replace(/[^\w_]/g, (char) => {
-    const code = char.codePointAt(0)?.toString(16).padStart(4, "0");
-    return code ? `\\u${code}` : "";
-  });
+  return sanitizeTeamNameForSlug(name);
 }
