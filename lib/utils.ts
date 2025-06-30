@@ -36,8 +36,12 @@ export function getVotesByTrackCookieName(track: Track): string {
  * - All other non-alphanumeric characters become their Unicode code point (e.g., & -> \u0026)
  */
 export function sanitizeTeamName(name: string): string {
-  return name.replace(/\s/g, "_").replace(/[^\w_]/g, (char) => {
-    const code = char.codePointAt(0)?.toString(16).padStart(4, "0");
-    return code ? `\\u${code}` : "";
-  });
+  // Remove all backslashes first
+  let slug = name.replace(/\\/g, "");
+  // Replace whitespace with _
+  slug = slug.replace(/\s+/g, "_");
+  // Remove apostrophes, commas, and all characters except word chars, _, -, +, and Unicode letters/numbers
+  slug = slug.replace(/[',]/g, "");
+  slug = slug.replace(/[^\w\-+\u00C0-\uFFFF]/g, "");
+  return slug;
 }
