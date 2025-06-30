@@ -12,10 +12,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { voteSchema, type VoteFormData } from "@/lib/validations";
 import { getVotesByTrackCookieName } from "@/lib/utils";
+import { SkeletonBox } from "@/components/ui/skeleton";
 
 interface VotingFormProps {
   teamId: string;
   track: Track;
+  loading?: boolean;
 }
 
 declare global {
@@ -26,7 +28,11 @@ declare global {
 
 const VOTE_LIMIT_PER_TRACK = 2;
 
-export default function VotingForm({ teamId, track }: VotingFormProps) {
+export default function VotingForm({
+  teamId,
+  track,
+  loading = false,
+}: VotingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
@@ -183,6 +189,25 @@ export default function VotingForm({ teamId, track }: VotingFormProps) {
           your participation!
         </AlertDescription>
       </Alert>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <SkeletonBox height="h-8" width="w-2/3" className="mb-4" />
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <SkeletonBox height="h-5" width="w-1/2" className="mb-2" />
+          <SkeletonBox height="h-4" width="w-2/3" />
+        </div>
+        <div className="space-y-4">
+          <SkeletonBox height="h-5" width="w-1/3" />
+          <SkeletonBox height="h-10" width="w-full" />
+          <SkeletonBox height="h-10" width="w-full" />
+          <SkeletonBox height="h-10" width="w-full" />
+        </div>
+        <SkeletonBox height="h-10" width="w-full" />
+      </div>
     );
   }
 
