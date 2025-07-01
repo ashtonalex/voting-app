@@ -301,21 +301,26 @@ export default function AdminDashboard() {
   });
 
   const filteredExportTeamOptions = useMemo(() => {
+    let teams: { id: string; name: string }[] = [];
     if (exportTrack && exportTrack !== "all") {
-      const teams = votes
+      teams = votes
         .filter((vote) => vote.team.track === exportTrack)
-        .map((vote) => vote.team)
-        .filter(
-          (team, idx, arr) => arr.findIndex((t) => t.id === team.id) === idx
-        ) as { id: string; name: string }[];
-      return teams.map((team) => ({ value: team.id, label: team.name }));
+        .map((vote) => vote.team);
     } else {
-      const teams = Array.from(new Set(votes.map((vote) => vote.team))) as {
-        id: string;
-        name: string;
-      }[];
-      return teams.map((team) => ({ value: team.id, label: team.name }));
+      teams = votes.map((vote) => vote.team);
     }
+    // Deduplicate by team name, keeping the first occurrence
+    const uniqueTeamsMap = new Map<string, { id: string; name: string }>();
+    for (const team of teams) {
+      if (!uniqueTeamsMap.has(team.name)) {
+        uniqueTeamsMap.set(team.name, team);
+      }
+    }
+    // Sort alphabetically by team name
+    const uniqueTeams = Array.from(uniqueTeamsMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+    return uniqueTeams.map((team) => ({ value: team.id, label: team.name }));
   }, [exportTrack, votes]);
 
   const handleExport = async (
