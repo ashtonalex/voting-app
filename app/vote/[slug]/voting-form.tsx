@@ -56,6 +56,8 @@ export default function VotingForm({
     resolver: zodResolver(voteSchema),
   });
 
+  const CAPTCHA_ENABLED = process.env.NEXT_PUBLIC_CAPTCHA_ENABLED === "true";
+
   useEffect(() => {
     // Read the cookie for this track
     let votes: string[] = [];
@@ -68,7 +70,7 @@ export default function VotingForm({
     setVotesForTrack(Array.isArray(votes) ? votes : []);
     setHasVotedForThisTeam(votes.includes(teamId));
 
-    if (typeof window !== "undefined" && !window.turnstile) {
+    if (CAPTCHA_ENABLED && typeof window !== "undefined" && !window.turnstile) {
       const script = document.createElement("script");
       script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
       script.async = true;
@@ -76,9 +78,11 @@ export default function VotingForm({
       document.body.appendChild(script);
     }
 
-    window.turnstileCallback = (token: string) => {
-      setCaptchaToken(token);
-    };
+    if (CAPTCHA_ENABLED) {
+      window.turnstileCallback = (token: string) => {
+        setCaptchaToken(token);
+      };
+    }
   }, [votesByTrackCookieName, teamId]);
 
   // Helper to refresh votes from cookie
@@ -105,7 +109,7 @@ export default function VotingForm({
       setSubmitStatus("error");
       return;
     }
-    if (!captchaToken) {
+    if (CAPTCHA_ENABLED && !captchaToken) {
       setErrorMessage("Please complete the CAPTCHA");
       setSubmitStatus("error");
       return;
@@ -124,7 +128,7 @@ export default function VotingForm({
         body: JSON.stringify({
           ...data,
           teamId,
-          token: captchaToken,
+          ...(CAPTCHA_ENABLED ? { token: captchaToken } : {}),
         }),
       });
 
@@ -256,15 +260,17 @@ export default function VotingForm({
         </div>
 
         {/* CAPTCHA */}
-        <div
-          className="cf-turnstile"
-          data-sitekey={siteKey}
-          data-callback="turnstileCallback"
-        />
+        {CAPTCHA_ENABLED && (
+          <div
+            className="cf-turnstile"
+            data-sitekey={siteKey}
+            data-callback="turnstileCallback"
+          />
+        )}
 
         <Button
           type="submit"
-          disabled={isSubmitting || !captchaToken}
+          disabled={isSubmitting || (CAPTCHA_ENABLED && !captchaToken)}
           className="w-full"
         >
           {isSubmitting ? (
