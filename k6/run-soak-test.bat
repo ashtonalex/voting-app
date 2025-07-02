@@ -2,12 +2,19 @@
 REM Soak Test Runner for Voting App (Windows)
 REM This script runs a 15-minute soak test with 50 users
 
+REM Set BASE_URL for Vercel deployment
+set BASE_URL=https://voting-app-peach.vercel.app
+
+REM You can override BASE_URL by running:
+REM   set BASE_URL=https://your-other-url && k6\run-soak-test.bat
+
 echo 🚀 Starting Voting App Soak Test
 echo ==================================
 echo Duration: 15 minutes
 echo Users: 50 concurrent
 echo Expected votes: max 200 total
 echo Vote limit: 2-4 per user
+echo Target BASE_URL: %BASE_URL%
 echo.
 
 REM Check if k6 is installed
@@ -47,6 +54,7 @@ echo.
 k6 run ^
     --out json=k6/results/soak-test-results.json ^
     --env TEAM_IDS_PATH=k6/team-ids.json ^
+    --env BASE_URL=%BASE_URL% ^
     k6/soak-test.js
 
 echo.

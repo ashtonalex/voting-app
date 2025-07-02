@@ -3,12 +3,19 @@
 # Soak Test Runner for Voting App
 # This script runs a 15-minute soak test with 50 users
 
+# Set BASE_URL for Vercel deployment
+export BASE_URL="https://voting-app-peach.vercel.app"
+
+# You can override BASE_URL by running:
+# BASE_URL=https://your-other-url k6/run-soak-test.sh
+
 echo "🚀 Starting Voting App Soak Test"
 echo "=================================="
 echo "Duration: 15 minutes"
 echo "Users: 50 concurrent"
 echo "Expected votes: max 200 total"
 echo "Vote limit: 2-4 per user"
+echo "Target BASE_URL: $BASE_URL"
 echo ""
 
 # Check if k6 is installed
@@ -44,6 +51,7 @@ echo ""
 k6 run \
     --out json=k6/results/soak-test-results.json \
     --env TEAM_IDS_PATH=k6/team-ids.json \
+    --env BASE_URL=$BASE_URL \
     k6/soak-test.js
 
 echo ""

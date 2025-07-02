@@ -2,6 +2,9 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { Trend, Rate, Counter } from "k6/metrics";
 
+// Configurable base URL
+const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
+
 // Load team IDs from JSON file
 const teamIds = JSON.parse(open(__ENV.TEAM_IDS_PATH || "k6/team-ids.json"));
 
@@ -62,7 +65,7 @@ function submitVote(userState) {
     email: userState.email,
   });
   const headers = { "Content-Type": "application/json" };
-  const res = http.post("http://localhost:3000/api/vote", payload, { headers });
+  const res = http.post(`${BASE_URL}/api/vote`, payload, { headers });
   voteDuration.add(res.timings.duration);
 
   let responseData = {};
@@ -101,6 +104,7 @@ export default function () {
 
 export function setup() {
   console.log("Starting soak test: 50 users, each votes 2-4 times (max 200 votes)");
+  console.log(`Using BASE_URL: ${BASE_URL}`);
 }
 
 export function teardown(data) {

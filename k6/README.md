@@ -10,28 +10,35 @@ This directory contains scripts to run a soak test on your voting app using [k6]
 - **Vote limit:** 2-4 per user (randomized)
 - **Metrics:** Vote success, vote blocking, response time
 - **Database queries:** Minimized to avoid quota issues
+- **API Base URL:** Configurable via `BASE_URL` (default: `http://localhost:3000`)
 
 ## How to Run
 
 ### Prerequisites
 - [k6 installed](https://k6.io/docs/getting-started/installation/)
-- Voting app running locally at http://localhost:3000
+- Voting app running locally at http://localhost:3000 or deployed (e.g. Vercel)
 - `k6/team-ids.json` file with team IDs
 
-### Linux/Mac
+### Linux/Mac (Vercel deployment)
 ```sh
 chmod +x k6/run-soak-test.sh
 ./k6/run-soak-test.sh
+# By default, BASE_URL is set to https://voting-app-peach.vercel.app
+# To override:
+# BASE_URL=https://your-other-url ./k6/run-soak-test.sh
 ```
 
-### Windows
+### Windows (Vercel deployment)
 ```bat
 k6\run-soak-test.bat
+REM By default, BASE_URL is set to https://voting-app-peach.vercel.app
+REM To override:
+REM   set BASE_URL=https://your-other-url && k6\run-soak-test.bat
 ```
 
 ### Manual k6 Command
 ```sh
-k6 run --env TEAM_IDS_PATH=k6/team-ids.json k6/soak-test.js
+k6 run --env TEAM_IDS_PATH=k6/team-ids.json --env BASE_URL=https://voting-app-peach.vercel.app k6/soak-test.js
 ```
 
 ## What to Expect
@@ -49,7 +56,7 @@ k6 run --env TEAM_IDS_PATH=k6/team-ids.json k6/soak-test.js
 
 ## Troubleshooting
 - Make sure k6 is installed and in your PATH
-- Make sure the voting app is running at http://localhost:3000
+- Make sure the voting app is running at the correct BASE_URL
 - Make sure `k6/team-ids.json` exists and is valid
 
 ---
