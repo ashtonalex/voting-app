@@ -78,7 +78,11 @@ export default function () {
   });
   const headers = { "Content-Type": "application/json" };
 
-  const res = http.post("http://localhost:3000/api/vote", payload, { headers });
+  const res = http.post(
+    "https://voting-app-peach.vercel.app/api/vote",
+    payload,
+    { headers }
+  );
 
   voteDuration.add(res.timings.duration);
   voteSuccess.add(res.status === 200);
