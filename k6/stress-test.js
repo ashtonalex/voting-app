@@ -34,6 +34,7 @@ export default function () {
 
   const headers = { "Content-Type": "application/json" };
 
+  // Change to deployed domain once ready for testing
   const res = http.post("http://localhost:3000/api/vote", payload, { headers });
 
   voteDuration.add(res.timings.duration);
