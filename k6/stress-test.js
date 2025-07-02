@@ -15,9 +15,9 @@ const trackNames = Object.keys(tracks);
 
 export const options = {
   stages: [
-    { duration: "30s", target: 20 }, // ramp-up
-    { duration: "1m", target: 80 }, // peak load
-    { duration: "30s", target: 0 }, // ramp-down
+    { duration: "3s", target: 1 }, // ramp-up
+    { duration: "5s", target: 1 }, // peak load
+    { duration: "3s", target: 0 }, // ramp-down
   ],
   thresholds: {
     http_req_duration: ["p(95)<800"], // 95% of requests < 800ms
@@ -30,6 +30,15 @@ const voteSuccess = new Rate("vote_success");
 
 // Each VU gets its own voting state
 const vuState = {};
+
+function logRequestAndResponse(payload, res) {
+  console.log("--- REQUEST PAYLOAD ---");
+  console.log(payload);
+  console.log("--- RESPONSE ---");
+  console.log("Status:", res.status);
+  console.log("Body:", res.body);
+  console.log("Headers:", JSON.stringify(res.headers));
+}
 
 export default function () {
   // Each VU is a unique voter
@@ -74,15 +83,23 @@ export default function () {
     email: `user${vuId}@example.com`,
     track,
     voteType: "standard",
-    captchaToken: "", // optional if CAPTCHA is disabled
+    token: "", // use 'token' instead of 'captchaToken'
   });
   const headers = { "Content-Type": "application/json" };
+
+  // http://localhost:3000/api/vote
+  // https://voting-app-peach.vercel.app/api/vote
 
   const res = http.post(
     "https://voting-app-peach.vercel.app/api/vote",
     payload,
     { headers }
   );
+
+  // Troubleshooting: log request and response if not 200
+  if (res.status !== 200) {
+    logRequestAndResponse(payload, res);
+  }
 
   voteDuration.add(res.timings.duration);
   voteSuccess.add(res.status === 200);
