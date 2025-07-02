@@ -15,9 +15,9 @@ const trackNames = Object.keys(tracks);
 
 export const options = {
   stages: [
-    { duration: "3s", target: 1 }, // ramp-up
-    { duration: "5s", target: 1 }, // peak load
-    { duration: "3s", target: 0 }, // ramp-down
+    { duration: "30s", target: 20 }, // ramp-up
+    { duration: "1min", target: 80 }, // peak load
+    { duration: "30s", target: 0 }, // ramp-down
   ],
   thresholds: {
     http_req_duration: ["p(95)<800"], // 95% of requests < 800ms
