@@ -136,3 +136,19 @@ npm start
 ## 📄 License
 
 [Specify your license here]
+
+# CAPTCHA Toggle
+
+To enable or disable CAPTCHA enforcement in the voting app:
+
+1. In your `.env` file, set:
+
+```
+CAPTCHA_ENABLED=false
+NEXT_PUBLIC_CAPTCHA_ENABLED=false
+```
+
+- Set both to `true` to enable CAPTCHA on both backend and frontend.
+- Set both to `false` to disable CAPTCHA everywhere.
+
+No code changes are required—just update the environment variables and redeploy/restart your app.
