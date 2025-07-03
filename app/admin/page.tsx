@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/skeleton";
 import VoteTimelineCard from "./vote-timeline-card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs";
+import useSWR from "swr";
 
 interface Vote {
   id: string;
@@ -72,6 +73,17 @@ interface VoteCount {
   count: number;
   rank: number;
 }
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Real-time total votes fetcher
+const totalVotesFetcher = async () => {
+  const res = await fetch("/api/admin/votes");
+  if (!res.ok) throw new Error("Failed to fetch total votes");
+  const data = await res.json();
+  if (typeof data.totalVotes !== "number") throw new Error("Invalid response");
+  return data.totalVotes;
+};
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -384,6 +396,18 @@ export default function AdminDashboard() {
     }
   };
 
+  const {
+    data: dashboard,
+    error: dashboardError,
+    isLoading: dashboardLoading,
+  } = useSWR("/api/admin/dashboard", fetcher);
+
+  const {
+    data: realTimeTotalVotes,
+    error: totalVotesError,
+    isLoading: totalVotesLoading,
+  } = useSWR("/api/admin/votes", totalVotesFetcher, { refreshInterval: 10000 });
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
@@ -629,7 +653,13 @@ export default function AdminDashboard() {
               <CardTitle>Total Votes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{totalVotes}</p>
+              {totalVotesLoading ? (
+                <p className="text-3xl font-bold text-gray-400">...</p>
+              ) : totalVotesError ? (
+                <p className="text-red-500">Failed to load</p>
+              ) : (
+                <p className="text-3xl font-bold">{realTimeTotalVotes}</p>
+              )}
             </CardContent>
           </Card>
 
@@ -673,7 +703,7 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="timeline">
-            <VoteTimelineCard />
+            <VoteTimelineCard timeSeries={dashboard?.timeSeries ?? []} />
           </TabsContent>
           <TabsContent value="team">
             <Card className="mb-8">
