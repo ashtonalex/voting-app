@@ -84,16 +84,16 @@ if (!globalForPrisma.prisma) {
     log: isDev ? ["query", "info", "warn", "error"] : ["error"],
   });
 
-  prisma.$on("query", (e: any) => {
-    const log: Omit<QueryLog, "id"> = {
-      query: e.query,
-      duration: e.duration,
-      timestamp: new Date(),
-      endpoint: e.endpoint,
-      sessionId: e.sessionId,
-    };
-    addQueryLog(log);
-    if (isDev) {
+  if (isDev) {
+    prisma.$on("query" as any, (e: any) => {
+      const log: Omit<QueryLog, "id"> = {
+        query: e.query,
+        duration: e.duration,
+        timestamp: new Date(),
+        endpoint: e.endpoint,
+        sessionId: e.sessionId,
+      };
+      addQueryLog(log);
       // eslint-disable-next-line no-console
       console.log(`[Prisma Query]`, {
         query: e.query,
@@ -102,8 +102,8 @@ if (!globalForPrisma.prisma) {
         endpoint: e.endpoint,
         sessionId: e.sessionId,
       });
-    }
-  });
+    });
+  }
 
   globalForPrisma.prisma = prisma;
 } else {
