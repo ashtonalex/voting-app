@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { voteSchema } from "@/lib/validations";
+import { revalidateDashboardTag } from "@/lib/dashboard-cache";
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY!;
 const CAPTCHA_ENABLED = process.env.CAPTCHA_ENABLED === "true";
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("Vote created successfully:", vote.id);
+
+    // Invalidate dashboard cache
+    await revalidateDashboardTag();
 
     return NextResponse.json({
       success: true,
