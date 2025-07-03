@@ -1,6 +1,7 @@
 import { prisma } from "./db";
 import type { Prisma } from "@prisma/client";
 import dayjs from "dayjs";
+import { withQueryMonitoring } from "./query-monitor";
 
 /**
  * Dashboard data structure for admin analytics
@@ -21,67 +22,81 @@ export interface DashboardData {
 
 /**
  * Fetches all dashboard data in a single transaction for optimal performance.
- * - Overall stats (total votes, date range)
- * - Vote breakdown by trackId
- * - Recent activity (last 48 hours)
- * - Time-series data (last 7 days, grouped by hour)
+ * Uses raw SQL for time-series aggregation for efficiency.
+ *
+ * @returns {Promise<DashboardData>} Dashboard analytics data
  */
 export async function getDashboardData(): Promise<DashboardData> {
-  const now = new Date();
-  const since = dayjs(now).subtract(7, "day").toDate();
-  const recentSince = dayjs(now).subtract(48, "hour").toDate();
+  const result = await withQueryMonitoring("dashboard", async () => {
+    const now = new Date();
+    const since = dayjs(now).subtract(7, "day").toDate();
+    const recentSince = dayjs(now).subtract(48, "hour").toDate();
 
-  const [totalVotes, dateRange, votesByTrack, recentVotes, timeSeriesRaw] =
-    await prisma.$transaction([
-      prisma.vote.count(),
-      prisma.vote.aggregate({
-        _min: { createdAt: true },
-        _max: { createdAt: true },
-      }),
-      prisma.vote.groupBy({
-        by: ["trackId"],
-        _count: { _all: true },
-      }),
-      prisma.vote.findMany({
-        where: { createdAt: { gte: recentSince } },
-        select: {
-          id: true,
-          teamId: true,
-          trackId: true,
-          createdAt: true,
-          email: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 100,
-      }),
-      prisma.vote.findMany({
-        where: { createdAt: { gte: since } },
-        select: { createdAt: true },
-        orderBy: { createdAt: "asc" },
-      }),
-    ]);
+    // Use $queryRaw with proper SQL syntax for PostgreSQL
+    const timeSeriesRaw = await prisma.$queryRaw<
+      {
+        hour: string;
+        count: bigint;
+      }[]
+    >`
+      SELECT 
+        to_char(date_trunc('hour', "createdAt"), 'YYYY-MM-DD HH24:00') as hour, 
+        count(*)::bigint as count
+      FROM "Vote"
+      WHERE "createdAt" >= ${since}
+      GROUP BY hour
+      ORDER BY hour ASC
+    `;
 
-  // Time-series: group by hour
-  const buckets: Record<string, number> = {};
-  for (const v of timeSeriesRaw) {
-    const key = dayjs(v.createdAt).format("YYYY-MM-DD HH:00");
-    buckets[key] = (buckets[key] || 0) + 1;
-  }
-  const timeSeries = Object.entries(buckets)
-    .map(([time, count]) => ({ time, count }))
-    .sort((a, b) => a.time.localeCompare(b.time));
+    const [totalVotes, dateRange, votesByTrack, recentVotes] =
+      await prisma.$transaction([
+        prisma.vote.count(),
+        prisma.vote.aggregate({
+          _min: { createdAt: true },
+          _max: { createdAt: true },
+        }),
+        prisma.vote.groupBy({
+          by: ["trackId"],
+          _count: true,
+          orderBy: { trackId: "asc" },
+        }),
+        prisma.vote.findMany({
+          where: { createdAt: { gte: recentSince } },
+          select: {
+            id: true,
+            teamId: true,
+            trackId: true,
+            createdAt: true,
+            email: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 100,
+        }),
+      ]);
 
-  return {
-    totalVotes,
-    dateRange: {
-      first: dateRange._min.createdAt,
-      last: dateRange._max.createdAt,
-    },
-    votesByTrack: votesByTrack.map((v) => ({
-      trackId: v.trackId,
-      count: v._count._all,
-    })),
-    recentVotes,
-    timeSeries,
-  };
+    // Convert bigint to number for time series data
+    const timeSeries = timeSeriesRaw.map((row) => ({
+      time: row.hour,
+      count: Number(row.count),
+    }));
+
+    return {
+      totalVotes,
+      dateRange: {
+        first: dateRange._min.createdAt,
+        last: dateRange._max.createdAt,
+      },
+      votesByTrack: votesByTrack.map((v) => ({
+        trackId: v.trackId,
+        count:
+          typeof v._count === "object" && v._count._all != null
+            ? v._count._all
+            : 0,
+      })),
+      recentVotes,
+      timeSeries,
+    };
+  });
+
+  return result.result;
 }
