@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/skeleton";
 import VoteTimelineCard from "./vote-timeline-card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs";
+import useSWR from "swr";
 
 interface Vote {
   id: string;
@@ -72,6 +73,8 @@ interface VoteCount {
   count: number;
   rank: number;
 }
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -384,6 +387,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const {
+    data: dashboard,
+    error: dashboardError,
+    isLoading: dashboardLoading,
+  } = useSWR(
+    "/api/admin/dashboard",
+    fetcher,
+    { refreshInterval: 300000 } // 5 min
+  );
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
@@ -629,7 +642,7 @@ export default function AdminDashboard() {
               <CardTitle>Total Votes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{totalVotes}</p>
+              <p className="text-3xl font-bold">{dashboard?.totalVotes ?? 0}</p>
             </CardContent>
           </Card>
 
