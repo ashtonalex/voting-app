@@ -27,29 +27,27 @@ interface TimelinePoint {
   count: number;
 }
 
-export default function VoteTimelineCard() {
-  const [data, setData] = useState<TimelinePoint[]>([]);
-  const [granularity, setGranularity] = useState<"hour" | "day">("hour");
-  const [loading, setLoading] = useState(true);
-  const [brushIndex, setBrushIndex] = useState<[number, number] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+interface VoteTimelineCardProps {
+  timeSeries: TimelinePoint[];
+}
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetch(`/api/admin/votes/timeline?granularity=${granularity}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-        return res.json();
-      })
-      .then((res) => setData(res.timeline || []))
-      .catch((err) => {
-        setError("Failed to load vote timeline");
-        setData([]);
-        console.error("Vote timeline fetch error:", err);
-      })
-      .finally(() => setLoading(false));
-  }, [granularity]);
+export default function VoteTimelineCard({
+  timeSeries,
+}: VoteTimelineCardProps) {
+  const [granularity, setGranularity] = useState<"hour" | "day">("hour");
+  const [brushIndex, setBrushIndex] = useState<[number, number] | null>(null);
+
+  // Optionally, support day granularity by grouping in JS
+  const data = useMemo(() => {
+    if (granularity === "hour") return timeSeries;
+    // Group by day
+    const buckets: Record<string, number> = {};
+    for (const point of timeSeries) {
+      const day = point.time.slice(0, 10);
+      buckets[day] = (buckets[day] || 0) + point.count;
+    }
+    return Object.entries(buckets).map(([time, count]) => ({ time, count }));
+  }, [granularity, timeSeries]);
 
   // Find peak point
   const peak = useMemo(() => {
@@ -120,15 +118,7 @@ export default function VoteTimelineCard() {
           <span className="font-semibold">Total votes in view: </span>
           <span className="font-mono">{totalVotes}</span>
         </div>
-        {error ? (
-          <div className="h-80 flex items-center justify-center text-red-500">
-            {error}
-          </div>
-        ) : loading ? (
-          <div className="h-80 flex items-center justify-center text-gray-500">
-            Loading...
-          </div>
-        ) : data.length === 0 ? (
+        {data.length === 0 ? (
           <div className="h-80 flex items-center justify-center text-gray-500">
             No vote data
           </div>
