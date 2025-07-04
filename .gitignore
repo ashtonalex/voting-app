@@ -4,6 +4,9 @@
 /node_modules
 /.pnp
 .pnp.js
+
+# Test results
+k6/results/*.json
 .yarn/install-state.gz
 
 # testing
