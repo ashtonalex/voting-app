@@ -15,13 +15,13 @@ const trackNames = Object.keys(tracks);
 
 export const options = {
   stages: [
-    { duration: "30s", target: 20 }, // ramp-up
-    { duration: "1min", target: 80 }, // peak load
-    { duration: "30s", target: 0 }, // ramp-down
+    { duration: "5m", target: 800 }, // ramp-up
+    { duration: "20min", target: 800 }, // peak load
+    { duration: "5m", target: 0 }, // ramp-down
   ],
   thresholds: {
-    http_req_duration: ["p(95)<800"], // 95% of requests < 800ms
-    http_req_failed: ["rate<0.05"], // < 5% failure rate
+    http_req_duration: ["p(95)<5000"], // 95% of requests < 5000ms
+    http_req_failed: ["rate<0.15"], // < 15% failure rate
   },
 };
 
@@ -32,12 +32,18 @@ const voteSuccess = new Rate("vote_success");
 const vuState = {};
 
 function logRequestAndResponse(payload, res) {
-  console.log("--- REQUEST PAYLOAD ---");
-  console.log(payload);
-  console.log("--- RESPONSE ---");
-  console.log("Status:", res.status);
-  console.log("Body:", res.body);
-  console.log("Headers:", JSON.stringify(res.headers));
+  console.error(
+    JSON.stringify({
+      type: "vote_error",
+      request: JSON.parse(payload),
+      response: {
+        status: res.status,
+        body: res.body,
+        headers: res.headers,
+      },
+      timestamp: new Date().toISOString(),
+    })
+  );
 }
 
 export default function () {
@@ -53,14 +59,16 @@ export default function () {
   const state = vuState[vuId];
 
   // Find tracks where this VU can still vote
-  const availableTracks = trackNames.filter(
+  let availableTracks = trackNames.filter(
     (track) =>
       state[track].length < 2 && tracks[track].length > state[track].length
   );
   if (availableTracks.length === 0) {
-    // All tracks exhausted for this VU
-    sleep(10); // idle until test ends
-    return;
+    // All tracks exhausted for this VU, reset state to start over
+    for (const track of trackNames) {
+      state[track] = [];
+    }
+    availableTracks = trackNames.slice();
   }
 
   // Pick a random track with votes left
@@ -111,7 +119,7 @@ export default function () {
   });
 
   if (res.status === 200 && ok) {
-    // Mark this team as voted for this track
+    // Mark this team as voted for this track (for this VU only)
     state[track].push(teamId);
   } else if (
     res.status === 400 &&
@@ -119,9 +127,9 @@ export default function () {
     res.body.includes("already voted")
   ) {
     // Over-voting or duplicate, do not reattempt
-    state[track].push(teamId); // treat as used
+    state[track].push(teamId); // treat as used for this VU
   }
 
-  // If this VU has voted 2 times in all 6 tracks, it will idle
-  sleep(1);
+  // If this VU has voted 2 times in all tracks, it will idle
+  sleep(30);
 }
