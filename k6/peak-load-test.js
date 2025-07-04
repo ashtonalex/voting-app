@@ -18,7 +18,7 @@ const teamIds = teamData.map((t) => t.id);
 export const options = {
   stages: [
     { duration: "2m", target: 500 }, // ramp-up
-    { duration: "11m", target: 500 }, // sustain
+    { duration: "15m", target: 500 }, // sustain
     { duration: "2m", target: 0 }, // ramp-down
   ],
   thresholds: {
