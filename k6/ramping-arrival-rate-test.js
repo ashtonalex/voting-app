@@ -76,11 +76,6 @@ export const options = {
     connection_errors: ["count<100"], // <100 connection errors
     timeout_errors: ["count<50"], // <50 timeout errors
   },
-  // Connection and timeout settings
-  http: {
-    timeout: REQUEST_TIMEOUT,
-    connectTimeout: CONNECTION_TIMEOUT,
-  },
 };
 
 function getAuthToken(vuId) {
@@ -272,7 +267,11 @@ export default function () {
   // Enhanced error handling for HTTP requests
   let res;
   try {
-    res = http.post(url, payload, { headers });
+    res = http.post(url, payload, {
+      headers,
+      timeout: REQUEST_TIMEOUT,
+      connectTimeout: CONNECTION_TIMEOUT,
+    });
   } catch (error) {
     // Handle connection errors
     if (
