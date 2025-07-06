@@ -7,8 +7,14 @@ import {
   randomIntBetween,
 } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
 
+// Configuration - can be overridden via environment variables
+const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
+const API_ENDPOINT = __ENV.API_ENDPOINT || "/api/vote";
+const CONNECTION_TIMEOUT = __ENV.CONNECTION_TIMEOUT || "10s";
+const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || "30s";
+
 // Load team IDs and tracks
-const teamData = JSON.parse(open(__ENV.TEAM_IDS_PATH || "k6/team-ids.json"));
+const teamData = JSON.parse(open(__ENV.TEAM_IDS_PATH || "team-ids.json"));
 const tracks = {};
 for (const t of teamData) {
   if (!tracks[t.track]) tracks[t.track] = [];
@@ -38,6 +44,8 @@ const limitRejection = new Rate("limit_rejection");
 const saturationPoint = new Counter("system_saturation");
 const coldStartCount = new Counter("serverless_cold_starts");
 const dbErrorCount = new Counter("db_connection_errors");
+const connectionErrorCount = new Counter("connection_errors");
+const timeoutErrorCount = new Counter("timeout_errors");
 
 // VU state
 const vuState = {};
@@ -65,6 +73,13 @@ export const options = {
     vote_success: ["rate>0.90"], // >90% success
     duplicate_rejection: ["rate>0.10"], // at least 10% duplicate rejections (expected)
     http_req_failed: ["rate<0.10"], // <10% error rate
+    connection_errors: ["count<100"], // <100 connection errors
+    timeout_errors: ["count<50"], // <50 timeout errors
+  },
+  // Connection and timeout settings
+  http: {
+    timeout: REQUEST_TIMEOUT,
+    connectTimeout: CONNECTION_TIMEOUT,
   },
 };
 
@@ -205,9 +220,33 @@ function logMonitoring(res, payload, scenario, vuId) {
   }
 }
 
+// Connection test function
+function testConnection() {
+  const testUrl = `${BASE_URL}/api/health`;
+  try {
+    const res = http.get(testUrl, { timeout: "5s" });
+    return res.status === 200;
+  } catch (error) {
+    return false;
+  }
+}
+
 export default function () {
   const vuId = __VU;
   const state = getVUState(vuId);
+
+  // Test connection on first iteration of each VU
+  if (__ITER === 0) {
+    const isConnected = testConnection();
+    if (!isConnected) {
+      console.error(
+        `[CONNECTION ERROR] VU ${vuId}: Cannot connect to ${BASE_URL}. Please ensure the server is running.`
+      );
+      connectionErrorCount.add(1);
+      // Continue with the test but log the issue
+    }
+  }
+
   let scenario = pickScenario();
   let payloadObj;
   switch (scenario) {
@@ -228,9 +267,37 @@ export default function () {
   }
   const payload = JSON.stringify(payloadObj);
   const headers = { "Content-Type": "application/json" };
-  const url = "https://voting-app-peach.vercel.app/api/vote"; // Change to your endpoint
+  const url = `${BASE_URL}${API_ENDPOINT}`;
 
-  const res = http.post(url, payload, { headers });
+  // Enhanced error handling for HTTP requests
+  let res;
+  try {
+    res = http.post(url, payload, { headers });
+  } catch (error) {
+    // Handle connection errors
+    if (
+      error.message.includes("connection refused") ||
+      error.message.includes("connect")
+    ) {
+      connectionErrorCount.add(1);
+      console.error(
+        `[CONNECTION ERROR] VU ${vuId}: ${error.message}. URL: ${url}`
+      );
+      return; // Skip this iteration
+    }
+    // Handle timeout errors
+    if (error.message.includes("timeout")) {
+      timeoutErrorCount.add(1);
+      console.error(
+        `[TIMEOUT ERROR] VU ${vuId}: ${error.message}. URL: ${url}`
+      );
+      return; // Skip this iteration
+    }
+    // Handle other errors
+    console.error(`[HTTP ERROR] VU ${vuId}: ${error.message}. URL: ${url}`);
+    return; // Skip this iteration
+  }
+
   voteDuration.add(res.timings.duration);
   voteSuccess.add(res.status === 200);
 
@@ -268,7 +335,7 @@ export default function () {
   // Monitor VU allocation and arrival/execution rate
   if (__ITER % 100 === 0) {
     console.log(
-      `[MONITOR] VU: ${__VU}, ITER: ${__ITER}, scenario: ${scenario}, res: ${res.status}, duration: ${res.timings.duration}ms`
+      `[MONITOR] VU: ${__VU}, ITER: ${__ITER}, scenario: ${scenario}, res: ${res.status}, duration: ${res.timings.duration}ms, url: ${url}`
     );
   }
 

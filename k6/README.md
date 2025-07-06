@@ -1,64 +1,212 @@
-# Voting App Soak Test with k6
+# k6 Load Testing Setup
 
-This directory contains scripts to run a soak test on your voting app using [k6](https://k6.io/).
+This directory contains k6 load testing scripts for the voting system API.
 
-## Test Overview
-- **Users:** 50
-- **Votes per user:** Random between 2 and 4
-- **Max votes per run:** 200
-- **Duration:** ~15 minutes
-- **Vote limit:** 2-4 per user (randomized)
-- **Metrics:** Vote success, vote blocking, response time
-- **Database queries:** Minimized to avoid quota issues
-- **API Base URL:** Configurable via `BASE_URL` (default: `http://localhost:3000`)
+## 🚀 Quick Start
 
-## How to Run
+### 1. Start Your Next.js Server
 
-### Prerequisites
-- [k6 installed](https://k6.io/docs/getting-started/installation/)
-- Voting app running locally at http://localhost:3000 or deployed (e.g. Vercel)
-- `k6/team-ids.json` file with team IDs
+First, make sure your Next.js development server is running:
 
-### Linux/Mac (Vercel deployment)
-```sh
-chmod +x k6/run-soak-test.sh
-./k6/run-soak-test.sh
-# By default, BASE_URL is set to https://voting-app-peach.vercel.app
-# To override:
-# BASE_URL=https://your-other-url ./k6/run-soak-test.sh
+```bash
+# From the project root
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
 ```
 
-### Windows (Vercel deployment)
-```bat
-k6\run-soak-test.bat
-REM By default, BASE_URL is set to https://voting-app-peach.vercel.app
-REM To override:
-REM   set BASE_URL=https://your-other-url && k6\run-soak-test.bat
+Your server should be running on `http://localhost:3000` by default.
+
+### 2. Test Connection
+
+Use the setup script to verify your server is ready:
+
+```bash
+# From the k6 directory
+node setup-and-run.js
 ```
 
-### Manual k6 Command
-```sh
-k6 run --env TEAM_IDS_PATH=k6/team-ids.json --env BASE_URL=https://voting-app-peach.vercel.app k6/soak-test.js
+This will:
+
+- Test connectivity to your server
+- Verify the health endpoint (`/api/health`)
+- Verify the vote endpoint (`/api/vote`)
+- Provide troubleshooting guidance if needed
+
+### 3. Run Load Test
+
+#### Option A: Using the setup script (Recommended)
+
+```bash
+# Interactive mode
+node setup-and-run.js
+
+# Auto-start mode
+node setup-and-run.js --auto
+
+# Custom server URL
+node setup-and-run.js http://localhost:4000
 ```
 
-## What to Expect
-- Each user will vote 2-4 times (randomly assigned)
-- Total votes will not exceed 200
-- The test will run for about 15 minutes
-- Metrics will be saved to `k6/results/soak-test-results.json`
-- Console output will show summary and blocking effectiveness
+#### Option B: Direct k6 command
 
-## Key Metrics
-- **Vote success rate** should be > 95%
-- **Vote blocking** should be working (blocked votes > 0)
-- **Response times** should be < 1s for 95% of requests
-- **Error rate** should be < 2%
+```bash
+# Basic run
+k6 run ramping-arrival-rate-test.js
 
-## Troubleshooting
-- Make sure k6 is installed and in your PATH
-- Make sure the voting app is running at the correct BASE_URL
-- Make sure `k6/team-ids.json` exists and is valid
+# With custom configuration
+k6 run --env BASE_URL=http://localhost:3000 --env API_ENDPOINT=/api/vote ramping-arrival-rate-test.js
+```
 
----
+## 📋 Configuration
 
-Feel free to modify the test parameters in `soak-test.js` to fit your needs! 
+### Environment Variables
+
+You can customize the test behavior using environment variables:
+
+| Variable             | Default                 | Description             |
+| -------------------- | ----------------------- | ----------------------- |
+| `BASE_URL`           | `http://localhost:3000` | Base URL of your server |
+| `API_ENDPOINT`       | `/api/vote`             | API endpoint to test    |
+| `TEAM_IDS_PATH`      | `team-ids.json`         | Path to team IDs file   |
+| `CONNECTION_TIMEOUT` | `10s`                   | Connection timeout      |
+| `REQUEST_TIMEOUT`    | `30s`                   | Request timeout         |
+
+### Example Custom Configuration
+
+```bash
+k6 run \
+  --env BASE_URL=https://your-production-url.com \
+  --env API_ENDPOINT=/api/vote \
+  --env CONNECTION_TIMEOUT=5s \
+  --env REQUEST_TIMEOUT=15s \
+  ramping-arrival-rate-test.js
+```
+
+## 📊 Test Scenarios
+
+The load test includes multiple scenarios:
+
+- **Valid Votes (75%)**: Normal voting behavior
+- **Duplicate Votes (15%)**: Attempting to vote for the same team/track
+- **Limit Votes (7%)**: Attempting to exceed voting limits
+- **Malformed Votes (3%)**: Invalid payloads to test error handling
+
+## 🔧 Troubleshooting
+
+### Connection Refused Error
+
+If you see `connection refused` errors:
+
+1. **Check if server is running:**
+
+   ```bash
+   curl http://localhost:3000/api/health
+   ```
+
+2. **Verify the correct port:**
+
+   - Default: `http://localhost:3000`
+   - If using a different port, update the URL
+
+3. **Check for firewall/antivirus blocking connections**
+
+### Database Connection Errors
+
+If you see Prisma database errors:
+
+1. **Check your `.env` file:**
+
+   ```bash
+   DATABASE_URL="postgresql://accelerate.prisma-data.net/?api_key=..."
+   ```
+
+2. **Verify network connectivity:**
+
+   ```bash
+   # Windows
+   Test-NetConnection accelerate.prisma-data.net -Port 5432
+
+   # Mac/Linux
+   nc -vz accelerate.prisma-data.net 5432
+   ```
+
+3. **Try a different network** (some networks block port 5432)
+
+### File Not Found Errors
+
+If you see file not found errors:
+
+1. **Make sure you're in the correct directory:**
+
+   ```bash
+   cd k6
+   ```
+
+2. **Verify `team-ids.json` exists:**
+   ```bash
+   ls -la team-ids.json
+   ```
+
+## 📈 Metrics
+
+The test tracks several metrics:
+
+- **vote_duration**: Response time for vote requests
+- **vote_success**: Success rate of votes
+- **connection_errors**: Number of connection failures
+- **timeout_errors**: Number of timeout failures
+- **duplicate_rejection**: Expected duplicate vote rejections
+- **malformed_rejection**: Expected malformed vote rejections
+- **limit_rejection**: Expected limit violation rejections
+
+## 🎯 Performance Thresholds
+
+The test includes performance thresholds:
+
+- 95% of requests should complete in < 3 seconds
+- Success rate should be > 90%
+- Connection errors should be < 100
+- Timeout errors should be < 50
+
+## 📁 Files
+
+- `ramping-arrival-rate-test.js`: Main k6 load test script
+- `setup-and-run.js`: Helper script for testing and running
+- `team-ids.json`: Team data for the load test
+- `README.md`: This documentation
+
+## 🔄 Test Stages
+
+The load test runs in 6 stages over 50 minutes:
+
+1. **0-5 min**: Ramp to 200 requests/minute
+2. **5-10 min**: Ramp to 600 requests/minute
+3. **10-25 min**: Hold at 600 requests/minute
+4. **25-35 min**: Ramp to 1000 requests/minute
+5. **35-45 min**: Hold at 1000 requests/minute
+6. **45-50 min**: Ramp down to 0
+
+## 🛠️ Development
+
+### Adding New Scenarios
+
+To add new test scenarios:
+
+1. Add the scenario type to the `SCENARIOS` array
+2. Create a `make[ScenarioName]Vote` function
+3. Add the case to the switch statement in the main function
+
+### Modifying Load Patterns
+
+To change the load pattern, modify the `stages` array in the `options` object.
+
+### Custom Metrics
+
+To add custom metrics:
+
+1. Create a new metric using k6's metric constructors
+2. Add it to the thresholds if needed
+3. Update the metric in your test logic
