@@ -1,5 +1,243 @@
 [
   {
+    "id": "cmct6mh6x0000iw0u5pbpbivs",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhdi0001iw0u4mj064en",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhgp0002iw0u14eq70wm",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhj10003iw0unptimmgm",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhl20004iw0ufdaqw3h0",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhoh0005iw0ubvbocyj0",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhqg0006iw0uzh7w8tpa",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhs10007iw0u3ueajhjx",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhv00008iw0us0k2389t",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhwu0009iw0uwp0tpirl",
+    "track": "AI_ART_PREU"
+  },
+  {
+    "id": "cmct6mhzh000aiw0ug1op2cru",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6mi27000biw0uhgbr8p6p",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6mi3e000ciw0und8x725y",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6mi4t000diw0uzfwizoiq",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6mi6m000eiw0una7a1j8u",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6mia3000fiw0uk39tv9hx",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6mie0000giw0uaj5i3hpm",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6mihk000hiw0u6famy2ik",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6miko000iiw0u0udhmrfl",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6mimj000jiw0ua69jdvmo",
+    "track": "AI_ART_UPPERSEC"
+  },
+  {
+    "id": "cmct6miob000kiw0u66r8lv7t",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6mipq000liw0usazs69j3",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6miu0000miw0un8pka5gl",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6mivj000niw0uagm8es8a",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6miww000oiw0urehm0b04",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6miyp000piw0uh3bgk01d",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6mj09000qiw0u2gu2yjjp",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6mj25000riw0ugctgdqzx",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6mj3d000siw0u3bo0uhtz",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6mj5g000tiw0uzrccq5hu",
+    "track": "AI_INNOVATION_PREU"
+  },
+  {
+    "id": "cmct6mj83000uiw0uycbj386t",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mj9v000viw0ug6mebcc3",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mjb5000wiw0u95lwl2hc",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mjfv000xiw0uv07iv3ok",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mjjm000yiw0un66nlpis",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mjo9000ziw0ufpr9d3bg",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mju10010iw0uiwilq9tu",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mjvq0011iw0uxr6ns3k7",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mjxy0012iw0uolho9y41",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mk0c0013iw0uhxtcg2r7",
+    "track": "AI_INNOVATION_UPPERSEC"
+  },
+  {
+    "id": "cmct6mk400014iw0uu3h8i0ja",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mk5g0015iw0uh1ujugaj",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mk710016iw0uldflvaxx",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mk8e0017iw0ujplgpd41",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mkb00018iw0uthwtlazu",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mkcu0019iw0uz2xtaedi",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mkes001aiw0ui3rz0wau",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mkik001biw0uzi6p6g4m",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6ml4t001ciw0uyfj70e23",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mldp001diw0un1752x8o",
+    "track": "AI_TECHNICAL_PREU"
+  },
+  {
+    "id": "cmct6mlfg001eiw0uh2e48qwu",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mlhy001fiw0uk9gexr3d",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mljj001giw0uf87wsugw",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mll3001hiw0u0dmuqh7q",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mlme001iiw0u2k8q4qlm",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mlnt001jiw0uanv8igww",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mloy001kiw0uy99pwgyg",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mlq8001liw0uk15f2s5y",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mlrs001miw0uifmtrfpq",
+    "track": "AI_TECHNICAL_UPPERSEC"
+  },
+  {
+    "id": "cmct6mlt5001niw0ur8xzg26j",
+=======
     "id": "cmct64dk300009smhk4vkufao",
     "track": "AI_ART_PREU"
   },
@@ -237,6 +475,4 @@
   },
   {
     "id": "cmct64gc8001n9smhqnuzbuow",
-    "track": "AI_TECHNICAL_UPPERSEC"
-  }
-]
+

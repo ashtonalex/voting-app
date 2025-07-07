@@ -1,5 +1,5 @@
 import { prisma } from "./db";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, Track } from "@prisma/client";
 import dayjs from "dayjs";
 import { withQueryMonitoring } from "./query-monitor";
 
@@ -13,9 +13,11 @@ export interface DashboardData {
   recentVotes: {
     id: string;
     teamId: string;
-    trackId: string;
     createdAt: Date;
     email: string;
+    team: {
+      track: Track;
+    };
   }[];
   timeSeries: { time: string; count: number }[];
 }
@@ -48,7 +50,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       ORDER BY hour ASC
     `;
 
-    const [totalVotes, dateRange, votesByTrack, recentVotes] =
+    const [totalVotes, dateRange, votesByTeam, recentVotes] =
       await prisma.$transaction([
         prisma.vote.count(),
         prisma.vote.aggregate({
@@ -56,23 +58,57 @@ export async function getDashboardData(): Promise<DashboardData> {
           _max: { createdAt: true },
         }),
         prisma.vote.groupBy({
-          by: ["trackId"],
+          by: ["teamId"],
           _count: true,
-          orderBy: { trackId: "asc" },
+          orderBy: { teamId: "asc" },
         }),
         prisma.vote.findMany({
           where: { createdAt: { gte: recentSince } },
           select: {
             id: true,
             teamId: true,
-            trackId: true,
             createdAt: true,
             email: true,
+            team: {
+              select: {
+                track: true,
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
           take: 100,
         }),
       ]);
+
+    // Get team information to map teamId to track
+    const teams = await prisma.team.findMany({
+      select: { id: true, track: true },
+    });
+    const teamTrackMap = new Map(teams.map((team) => [team.id, team.track]));
+
+    // Group votes by track
+    const votesByTrackMap = new Map<Track, number>();
+    votesByTeam.forEach((voteGroup) => {
+      const track = teamTrackMap.get(voteGroup.teamId);
+      if (
+        track &&
+        voteGroup._count &&
+        typeof voteGroup._count === "object" &&
+        "_all" in voteGroup._count
+      ) {
+        votesByTrackMap.set(
+          track,
+          (votesByTrackMap.get(track) || 0) + (voteGroup._count._all || 0)
+        );
+      }
+    });
+
+    const votesByTrack = Array.from(votesByTrackMap.entries()).map(
+      ([trackId, count]) => ({
+        trackId,
+        count,
+      })
+    );
 
     // Convert bigint to number for time series data
     const timeSeries = timeSeriesRaw.map((row) => ({
@@ -86,13 +122,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         first: dateRange._min.createdAt,
         last: dateRange._max.createdAt,
       },
-      votesByTrack: votesByTrack.map((v) => ({
-        trackId: v.trackId,
-        count:
-          typeof v._count === "object" && v._count._all != null
-            ? v._count._all
-            : 0,
-      })),
+      votesByTrack,
       recentVotes,
       timeSeries,
     };

@@ -5,7 +5,7 @@ const https = require("https");
 const { spawn } = require("child_process");
 
 // Configuration
-const DEFAULT_BASE_URL = "http://localhost:3000";
+const DEFAULT_BASE_URL = "https://voting-app-peach.vercel.app";
 const DEFAULT_API_ENDPOINT = "/api/vote";
 const HEALTH_ENDPOINT = "/api/health";
 
