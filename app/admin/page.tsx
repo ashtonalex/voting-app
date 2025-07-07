@@ -74,11 +74,16 @@ interface VoteCount {
   rank: number;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) =>
+  fetch(url, {
+    credentials: "include",
+  }).then((res) => res.json());
 
 // Real-time total votes fetcher
 const totalVotesFetcher = async () => {
-  const res = await fetch("/api/admin/votes");
+  const res = await fetch("/api/admin/votes", {
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("Failed to fetch total votes");
   const data = await res.json();
   if (typeof data.totalVotes !== "number") throw new Error("Invalid response");
@@ -251,7 +256,9 @@ export default function AdminDashboard() {
         }
         params.append("applyFilters", "true");
 
-        const response = await fetch(`/api/admin/votes?${params}`);
+        const response = await fetch(`/api/admin/votes?${params}`, {
+          credentials: "include",
+        });
         const data = await response.json();
 
         if (response.ok) {
@@ -277,7 +284,9 @@ export default function AdminDashboard() {
   const fetchVotes = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/votes?applyFilters=false`);
+      const response = await fetch(`/api/admin/votes?applyFilters=false`, {
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (response.ok) {
@@ -345,7 +354,9 @@ export default function AdminDashboard() {
       if (track && track !== "all") params.append("track", track);
       if (teamId && teamId !== "all") params.append("teamId", teamId);
       if (mode) params.append("mode", mode);
-      const response = await fetch(`/api/admin/export?${params}`);
+      const response = await fetch(`/api/admin/export?${params}`, {
+        credentials: "include",
+      });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       let filename = "votes.csv";
@@ -375,6 +386,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch(`/api/admin/votes/${voteId}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -400,13 +412,15 @@ export default function AdminDashboard() {
     data: dashboard,
     error: dashboardError,
     isLoading: dashboardLoading,
-  } = useSWR("/api/admin/dashboard", fetcher);
+  } = useSWR(session ? "/api/admin/dashboard" : null, fetcher);
 
   const {
     data: realTimeTotalVotes,
     error: totalVotesError,
     isLoading: totalVotesLoading,
-  } = useSWR("/api/admin/votes", totalVotesFetcher, { refreshInterval: 10000 });
+  } = useSWR(session ? "/api/admin/votes" : null, totalVotesFetcher, {
+    refreshInterval: 10000,
+  });
 
   if (status === "loading" || loading) {
     return (
@@ -658,7 +672,9 @@ export default function AdminDashboard() {
               ) : totalVotesError ? (
                 <p className="text-red-500">Failed to load</p>
               ) : (
-                <p className="text-3xl font-bold">{realTimeTotalVotes}</p>
+                <p className="text-3xl font-bold">
+                  {realTimeTotalVotes || totalVotes}
+                </p>
               )}
             </CardContent>
           </Card>
@@ -703,7 +719,21 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="timeline">
-            <VoteTimelineCard timeSeries={dashboard?.timeSeries ?? []} />
+            {dashboardLoading ? (
+              <Card className="mb-8">
+                <CardContent className="h-96 flex items-center justify-center">
+                  <p className="text-gray-500">Loading timeline...</p>
+                </CardContent>
+              </Card>
+            ) : dashboardError ? (
+              <Card className="mb-8">
+                <CardContent className="h-96 flex items-center justify-center">
+                  <p className="text-red-500">Failed to load timeline data</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <VoteTimelineCard timeSeries={dashboard?.timeSeries ?? []} />
+            )}
           </TabsContent>
           <TabsContent value="team">
             <Card className="mb-8">
