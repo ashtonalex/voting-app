@@ -97,8 +97,16 @@ export async function POST(request: NextRequest) {
 
     console.log("Vote created successfully:", vote.id);
 
-    // Invalidate dashboard cache
-    await revalidateDashboardTag();
+    // Invalidate dashboard cache with better error handling
+    try {
+      console.log("Invalidating dashboard cache...");
+      await revalidateDashboardTag();
+      console.log("Dashboard cache invalidated successfully");
+    } catch (cacheError) {
+      console.error("Failed to invalidate dashboard cache:", cacheError);
+      // Don't fail the vote submission if cache invalidation fails
+      // The vote was successful, just log the cache error
+    }
 
     return NextResponse.json({
       success: true,

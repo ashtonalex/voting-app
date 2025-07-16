@@ -8,11 +8,22 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     resetQueryCount();
-    const data = await getCachedDashboardData(getDashboardData);
+    const { searchParams } = new URL(request.url);
+    const fresh = searchParams.get("fresh") === "true";
+    let data, fromCache;
+    if (fresh) {
+      data = await getDashboardData();
+      fromCache = false;
+    } else {
+      data = await getCachedDashboardData(getDashboardData);
+      fromCache = true;
+    }
     const queryCount = getQueryCount();
     return NextResponse.json({
       ...data,
       queryCount,
+      timestamp: new Date().toISOString(),
+      fromCache,
     });
   } catch (error) {
     console.error("Dashboard API error:", error);

@@ -44,7 +44,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       SELECT 
         to_char(date_trunc('hour', "createdAt"), 'YYYY-MM-DD HH24:00') as hour, 
         count(*)::bigint as count
-      FROM "Vote"
+      FROM "votes"
       GROUP BY hour
       ORDER BY hour ASC
     `;
