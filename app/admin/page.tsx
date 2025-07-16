@@ -53,6 +53,7 @@ import {
 import VoteTimelineCard from "./vote-timeline-card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs";
 import useSWR from "swr";
+import { mutate } from "swr";
 
 interface Vote {
   id: string;
@@ -398,7 +399,8 @@ export default function AdminDashboard() {
             expires: 30,
           });
         }
-
+        // Force SWR to refetch dashboard data so timeline and stats update
+        mutate("/api/admin/dashboard");
         fetchVotes();
         fetchFilteredVotes();
         setDeleteVoteId(null);
@@ -412,7 +414,9 @@ export default function AdminDashboard() {
     data: dashboard,
     error: dashboardError,
     isLoading: dashboardLoading,
-  } = useSWR(session ? "/api/admin/dashboard" : null, fetcher);
+  } = useSWR(session ? "/api/admin/dashboard" : null, fetcher, {
+    refreshInterval: 5000,
+  });
 
   const {
     data: realTimeTotalVotes,

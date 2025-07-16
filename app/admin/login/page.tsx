@@ -71,14 +71,6 @@ export default function AdminLoginPage() {
       <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-8">Admin Login</h1>
 
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Default Password:</strong> admin123
-          </p>
-          <p className="text-xs text-blue-600 mt-1">Change this password in production</p>
-        </div>
-
-
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <Label htmlFor="password">Password</Label>
