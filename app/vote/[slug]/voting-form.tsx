@@ -182,14 +182,16 @@ export default function VotingForm({
           </AlertDescription>
         </Alert>
         <div className="flex justify-center mt-3">
-          <a
-            href="https://www.jotform.com/build/251951156648060"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-gray-500 hover:text-blue-600 underline transition-colors"
-          >
-            Join Hyperbyte’s AI Mastery program on 9-10 August 2025!
-          </a>
+          <div className="border border-blue-300 rounded-lg px-4 py-3 bg-white shadow-sm hover:shadow-md transition-shadow duration-150">
+            <a
+              href="https://www.jotform.com/build/251951156648060"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-base font-semibold text-blue-700 hover:text-blue-900 transition-colors duration-150 focus:outline-none cursor-pointer"
+            >
+              Join Hyperbyte’s AI Mastery program on 9-10 August 2025!
+            </a>
+          </div>
         </div>
       </>
     );
