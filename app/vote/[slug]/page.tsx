@@ -34,7 +34,26 @@ export default async function VotePage({ params }: VotePageProps) {
   // }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
+      {/* Logo at the very top, centered, outside the white box */}
+      <div
+        className="flex justify-center w-full"
+        style={{ marginBottom: "10px" }}
+      >
+        <a
+          href="https://hyperbyte.ai/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex justify-center"
+        >
+          <img
+            src="/hyperbyte-logo.png"
+            alt="Hyperbyte Logo"
+            className="object-contain"
+            style={{ width: "20%", maxWidth: "20%", height: "auto" }}
+          />
+        </a>
+      </div>
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Vote for</h1>

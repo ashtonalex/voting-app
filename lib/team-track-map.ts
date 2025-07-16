@@ -27,7 +27,7 @@ export const teamTrackMap: Record<string, string> = {
   "Seismo AI": "AI_INNOVATION_PREU",
   "Wi-fighters": "AI_INNOVATION_PREU",
   INNOLAB: "AI_INNOVATION_PREU",
-  "Cacat Ginas": "AI_INNOVATION_PREU",
+  "Chaser Ginas": "AI_INNOVATION_PREU",
   "NEIVCE LWH 2": "AI_INNOVATION_PREU",
   "404 Name Not Found": "AI_INNOVATION_PREU",
   Eone: "AI_INNOVATION_UPPERSEC",
