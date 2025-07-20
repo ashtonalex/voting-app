@@ -135,7 +135,9 @@ npm start
 
 ## 📄 License
 
-[Specify your license here]
+This project is proprietary and confidential. All rights reserved.
+
+Use of this software is restricted to hyperbyte.ai and its authorized personnel only, unless explicit written permission is granted. No part of this codebase may be copied, modified, distributed, or used by external parties without express authorization from hyperbyte.ai.
 
 # CAPTCHA Toggle
 
