@@ -1,212 +1,255 @@
-# k6 Load Testing Setup
+# Voting System
 
-This directory contains k6 load testing scripts for the voting system API.
+A modern, secure voting platform built with Next.js 14, featuring real-time analytics, QR code management, and comprehensive admin controls.
 
-## 🚀 Quick Start
+## 🚀 Features
 
-### 1. Start Your Next.js Server
+- **Public Voting System**: Team-based voting with customizable limits
+- **Admin Dashboard**: Real-time analytics, vote management, and reporting
+- **QR Code Generation**: Bulk QR code creation and PDF export
+- **Anti-Fraud Protection**: Vote limits, unique constraints, and optional CAPTCHA
+- **Real-time Updates**: Live vote counting and analytics
+- **Secure Authentication**: Admin-only access with session management
 
-First, make sure your Next.js development server is running:
+## 🛠 Tech Stack
 
-```bash
-# From the project root
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+**Frontend & Backend:**
+- Next.js 14 (React 18, TypeScript)
+- App Router for both pages and API routes
+
+**Database & ORM:**
+- PostgreSQL
+- Prisma ORM (@prisma/client 6.12.0)
+
+**Styling & UI:**
+- TailwindCSS 3.4.17
+- Recharts for data visualization
+- QR code generation (qrcode/react-qr-code)
+
+**Authentication & Security:**
+- NextAuth.js 4.24.5
+- bcryptjs for password hashing
+- Zod for validation
+
+**Data Management:**
+- SWR for data fetching and caching
+- Axios for HTTP requests
+- js-cookie for client-side state
+
+**Testing & Performance:**
+- k6 for load testing
+- Built-in performance optimization via Next.js
+
+## 📁 Project Structure
+
+```
+├── app/                    # Next.js app directory
+│   ├── admin/             # Admin dashboard pages
+│   ├── vote/              # Public voting pages
+│   ├── qr/                # QR code management
+│   └── api/               # API routes
+├── components/            # Reusable React components
+├── lib/                   # Utility functions and configurations
+│   ├── prisma.ts         # Database connection
+│   ├── auth.ts           # Authentication helpers
+│   └── validations.ts    # Zod schemas
+├── prisma/               # Database schema and migrations
+├── scripts/              # Utility and setup scripts
+├── k6/                   # Load testing scripts
+└── public/               # Static assets
 ```
 
-Your server should be running on `http://localhost:3000` by default.
+## 🔧 Installation
 
-### 2. Test Connection
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd voting-system
+   ```
 
-Use the setup script to verify your server is ready:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
+3. **Set up environment variables**
+   Create a `.env` file in the root directory:
+   ```env
+   # Database
+   DATABASE_URL="postgresql://username:password@localhost:5432/voting_db"
+   
+   # Authentication
+   NEXTAUTH_SECRET="your-nextauth-secret"
+   ADMIN_PASSWORD_HASH="your-bcrypt-hashed-password"
+   
+   # Optional CAPTCHA
+   CAPTCHA_ENABLED=false
+   NEXT_PUBLIC_CAPTCHA_ENABLED=false
+   ```
+
+4. **Set up the database**
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
+   ```
+
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+Visit `http://localhost:3000` to see the application.
+
+## 🗄 Database Schema
+
+The system uses three main models:
+
+- **Team**: Voting teams with slugs and metadata
+- **Vote**: Individual votes linking emails to teams and tracks
+- **Track**: Enum for different voting categories
+
+Key constraints:
+- Unique votes per email-team combination
+- Vote limits: 2 votes per track, 1 per team
+- Audit trail with timestamps
+
+## 🔐 Authentication
+
+**Admin Authentication:**
+- Session-based authentication via NextAuth.js
+- Bcrypt password hashing
+- Protected admin routes and API endpoints
+
+**Public Voting:**
+- No login required
+- Cookie-based vote tracking
+- Email required for vote submission
+
+## 📊 Voting System
+
+**Vote Flow:**
+1. Users access team-specific voting URLs (`/vote/[teamSlug]`)
+2. Vote limits enforced on both frontend and backend
+3. Votes validated and stored with unique constraints
+4. Real-time analytics updated via SWR
+
+**Security Features:**
+- Duplicate vote prevention
+- Input validation with Zod
+- Optional CAPTCHA protection
+- Audit trail for all votes
+
+## 🎯 Admin Dashboard
+
+Access the admin dashboard at `/admin` with the following features:
+
+- **Real-time Analytics**: Vote counts, charts, and trends
+- **Vote Management**: View, filter, and manage all votes
+- **Team Management**: Add, edit, and remove voting teams
+- **QR Code Export**: Generate and download QR codes for all teams
+- **Data Export**: Export voting data for analysis
+
+## 🏗 API Architecture
+
+RESTful API endpoints located in `app/api/`:
+
+- `POST /api/vote` - Submit a vote
+- `GET /api/admin/dashboard` - Dashboard analytics
+- `GET /api/admin/votes` - Vote management
+- `GET /api/admin/teams` - Team management
+- `POST /api/admin/export` - Data export
+- `/api/auth/*` - Authentication endpoints
+
+All endpoints include:
+- Input validation with Zod
+- Error handling with standard HTTP codes
+- Authentication middleware for admin routes
+
+## ⚡ Performance
+
+**Optimization Features:**
+- SWR for efficient data fetching and caching
+- Prisma for optimized database queries
+- Next.js automatic code splitting and optimization
+- TailwindCSS for minimal CSS bundle size
+
+**Load Testing:**
+- k6 scripts included in `/k6` directory
+- Performance monitoring and benchmarking tools
+
+## 🚀 Deployment
+
+**Recommended: Vercel**
+1. Connect your repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on git push
+
+**Alternative: Node.js Hosting**
+1. Build the application: `npm run build`
+2. Start the server: `npm start`
+3. Ensure PostgreSQL database is accessible
+
+## 🧪 Testing
+
+**Load Testing:**
 ```bash
-# From the k6 directory
-node setup-and-run.js
+# Run k6 load tests
+cd k6
+k6 run load-test.js
 ```
 
-This will:
+**Development Testing:**
+- Use development scripts in `/scripts` directory
+- Test voting flows and admin functions locally
 
-- Test connectivity to your server
-- Verify the health endpoint (`/api/health`)
-- Verify the vote endpoint (`/api/vote`)
-- Provide troubleshooting guidance if needed
+## 🔧 Configuration
 
-### 3. Run Load Test
+**Required Environment Variables:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `NEXTAUTH_SECRET` - Secret for session encryption
+- `ADMIN_PASSWORD_HASH` - Bcrypt hash of admin password
 
-#### Option A: Using the setup script (Recommended)
+**Optional Environment Variables:**
+- `CAPTCHA_ENABLED` - Enable server-side CAPTCHA
+- `NEXT_PUBLIC_CAPTCHA_ENABLED` - Enable client-side CAPTCHA
 
-```bash
-# Interactive mode
-node setup-and-run.js
+## 🛡 Security Considerations
 
-# Auto-start mode
-node setup-and-run.js --auto
+- **SQL Injection**: Prevented by Prisma ORM
+- **XSS**: React automatically escapes output
+- **CSRF**: Protected by NextAuth.js and SameSite cookies
+- **Password Security**: Bcrypt hashing with salt
+- **Input Validation**: Comprehensive Zod schemas
+- **Session Security**: Secure, HttpOnly, SameSite cookies
 
-# Custom server URL
-node setup-and-run.js http://localhost:4000
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Check the documentation in `/docs`
+- Review the API documentation
+- Open an issue on GitHub
+
+## 🔄 Data Flow Overview
+
 ```
+User Vote Flow:
+User → /vote/[teamSlug] → Validation → Database → Real-time Updates
 
-#### Option B: Direct k6 command
+Admin Flow:
+Admin → Login → Dashboard → Analytics/Management → Database
 
-```bash
-# Basic run
-k6 run ramping-arrival-rate-test.js
-
-# With custom configuration
-k6 run --env BASE_URL=http://localhost:3000 --env API_ENDPOINT=/api/vote ramping-arrival-rate-test.js
+QR Code Flow:
+Admin → /qr/production → Team Data → QR Generation → PDF Export
 ```
-
-## 📋 Configuration
-
-### Environment Variables
-
-You can customize the test behavior using environment variables:
-
-| Variable             | Default                 | Description             |
-| -------------------- | ----------------------- | ----------------------- |
-| `BASE_URL`           | `http://localhost:3000` | Base URL of your server |
-| `API_ENDPOINT`       | `/api/vote`             | API endpoint to test    |
-| `TEAM_IDS_PATH`      | `team-ids.json`         | Path to team IDs file   |
-| `CONNECTION_TIMEOUT` | `10s`                   | Connection timeout      |
-| `REQUEST_TIMEOUT`    | `30s`                   | Request timeout         |
-
-### Example Custom Configuration
-
-```bash
-k6 run \
-  --env BASE_URL=https://your-production-url.com \
-  --env API_ENDPOINT=/api/vote \
-  --env CONNECTION_TIMEOUT=5s \
-  --env REQUEST_TIMEOUT=15s \
-  ramping-arrival-rate-test.js
-```
-
-## 📊 Test Scenarios
-
-The load test includes multiple scenarios:
-
-- **Valid Votes (75%)**: Normal voting behavior
-- **Duplicate Votes (15%)**: Attempting to vote for the same team/track
-- **Limit Votes (7%)**: Attempting to exceed voting limits
-- **Malformed Votes (3%)**: Invalid payloads to test error handling
-
-## 🔧 Troubleshooting
-
-### Connection Refused Error
-
-If you see `connection refused` errors:
-
-1. **Check if server is running:**
-
-   ```bash
-   curl http://localhost:3000/api/health
-   ```
-
-2. **Verify the correct port:**
-
-   - Default: `http://localhost:3000`
-   - If using a different port, update the URL
-
-3. **Check for firewall/antivirus blocking connections**
-
-### Database Connection Errors
-
-If you see Prisma database errors:
-
-1. **Check your `.env` file:**
-
-   ```bash
-   DATABASE_URL="postgresql://accelerate.prisma-data.net/?api_key=..."
-   ```
-
-2. **Verify network connectivity:**
-
-   ```bash
-   # Windows
-   Test-NetConnection accelerate.prisma-data.net -Port 5432
-
-   # Mac/Linux
-   nc -vz accelerate.prisma-data.net 5432
-   ```
-
-3. **Try a different network** (some networks block port 5432)
-
-### File Not Found Errors
-
-If you see file not found errors:
-
-1. **Make sure you're in the correct directory:**
-
-   ```bash
-   cd k6
-   ```
-
-2. **Verify `team-ids.json` exists:**
-   ```bash
-   ls -la team-ids.json
-   ```
-
-## 📈 Metrics
-
-The test tracks several metrics:
-
-- **vote_duration**: Response time for vote requests
-- **vote_success**: Success rate of votes
-- **connection_errors**: Number of connection failures
-- **timeout_errors**: Number of timeout failures
-- **duplicate_rejection**: Expected duplicate vote rejections
-- **malformed_rejection**: Expected malformed vote rejections
-- **limit_rejection**: Expected limit violation rejections
-
-## 🎯 Performance Thresholds
-
-The test includes performance thresholds:
-
-- 95% of requests should complete in < 3 seconds
-- Success rate should be > 90%
-- Connection errors should be < 100
-- Timeout errors should be < 50
-
-## 📁 Files
-
-- `ramping-arrival-rate-test.js`: Main k6 load test script
-- `setup-and-run.js`: Helper script for testing and running
-- `team-ids.json`: Team data for the load test
-- `README.md`: This documentation
-
-## 🔄 Test Stages
-
-The load test runs in 6 stages over 50 minutes:
-
-1. **0-5 min**: Ramp to 200 requests/minute
-2. **5-10 min**: Ramp to 600 requests/minute
-3. **10-25 min**: Hold at 600 requests/minute
-4. **25-35 min**: Ramp to 1000 requests/minute
-5. **35-45 min**: Hold at 1000 requests/minute
-6. **45-50 min**: Ramp down to 0
-
-## 🛠️ Development
-
-### Adding New Scenarios
-
-To add new test scenarios:
-
-1. Add the scenario type to the `SCENARIOS` array
-2. Create a `make[ScenarioName]Vote` function
-3. Add the case to the switch statement in the main function
-
-### Modifying Load Patterns
-
-To change the load pattern, modify the `stages` array in the `options` object.
-
-### Custom Metrics
-
-To add custom metrics:
-
-1. Create a new metric using k6's metric constructors
-2. Add it to the thresholds if needed
-3. Update the metric in your test logic
