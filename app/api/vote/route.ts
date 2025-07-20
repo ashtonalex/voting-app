@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { voteSchema } from "@/lib/validations";
+import { revalidateDashboardTag } from "@/lib/dashboard-cache";
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY!;
 const CAPTCHA_ENABLED = process.env.CAPTCHA_ENABLED === "true";
@@ -95,6 +96,17 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("Vote created successfully:", vote.id);
+
+    // Invalidate dashboard cache with better error handling
+    try {
+      console.log("Invalidating dashboard cache...");
+      await revalidateDashboardTag();
+      console.log("Dashboard cache invalidated successfully");
+    } catch (cacheError) {
+      console.error("Failed to invalidate dashboard cache:", cacheError);
+      // Don't fail the vote submission if cache invalidation fails
+      // The vote was successful, just log the cache error
+    }
 
     return NextResponse.json({
       success: true,

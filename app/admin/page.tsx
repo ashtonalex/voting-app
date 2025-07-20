@@ -52,6 +52,8 @@ import {
 } from "@/components/ui/skeleton";
 import VoteTimelineCard from "./vote-timeline-card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@radix-ui/react-tabs";
+import useSWR from "swr";
+import { mutate } from "swr";
 
 interface Vote {
   id: string;
@@ -72,6 +74,22 @@ interface VoteCount {
   count: number;
   rank: number;
 }
+
+const fetcher = (url: string) =>
+  fetch(url, {
+    credentials: "include",
+  }).then((res) => res.json());
+
+// Real-time total votes fetcher
+const totalVotesFetcher = async () => {
+  const res = await fetch("/api/admin/votes", {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch total votes");
+  const data = await res.json();
+  if (typeof data.totalVotes !== "number") throw new Error("Invalid response");
+  return data.totalVotes;
+};
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -239,7 +257,9 @@ export default function AdminDashboard() {
         }
         params.append("applyFilters", "true");
 
-        const response = await fetch(`/api/admin/votes?${params}`);
+        const response = await fetch(`/api/admin/votes?${params}`, {
+          credentials: "include",
+        });
         const data = await response.json();
 
         if (response.ok) {
@@ -265,7 +285,9 @@ export default function AdminDashboard() {
   const fetchVotes = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/votes?applyFilters=false`);
+      const response = await fetch(`/api/admin/votes?applyFilters=false`, {
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (response.ok) {
@@ -333,7 +355,9 @@ export default function AdminDashboard() {
       if (track && track !== "all") params.append("track", track);
       if (teamId && teamId !== "all") params.append("teamId", teamId);
       if (mode) params.append("mode", mode);
-      const response = await fetch(`/api/admin/export?${params}`);
+      const response = await fetch(`/api/admin/export?${params}`, {
+        credentials: "include",
+      });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       let filename = "votes.csv";
@@ -363,6 +387,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch(`/api/admin/votes/${voteId}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -374,7 +399,8 @@ export default function AdminDashboard() {
             expires: 30,
           });
         }
-
+        // Force SWR to refetch dashboard data so timeline and stats update
+        mutate("/api/admin/dashboard");
         fetchVotes();
         fetchFilteredVotes();
         setDeleteVoteId(null);
@@ -383,6 +409,22 @@ export default function AdminDashboard() {
       console.error("Failed to delete vote:", error);
     }
   };
+
+  const {
+    data: dashboard,
+    error: dashboardError,
+    isLoading: dashboardLoading,
+  } = useSWR(session ? "/api/admin/dashboard" : null, fetcher, {
+    refreshInterval: 5000,
+  });
+
+  const {
+    data: realTimeTotalVotes,
+    error: totalVotesError,
+    isLoading: totalVotesLoading,
+  } = useSWR(session ? "/api/admin/votes" : null, totalVotesFetcher, {
+    refreshInterval: 10000,
+  });
 
   if (status === "loading" || loading) {
     return (
@@ -629,7 +671,15 @@ export default function AdminDashboard() {
               <CardTitle>Total Votes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{totalVotes}</p>
+              {totalVotesLoading ? (
+                <p className="text-3xl font-bold text-gray-400">...</p>
+              ) : totalVotesError ? (
+                <p className="text-red-500">Failed to load</p>
+              ) : (
+                <p className="text-3xl font-bold">
+                  {realTimeTotalVotes || totalVotes}
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -673,7 +723,21 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="timeline">
-            <VoteTimelineCard />
+            {dashboardLoading ? (
+              <Card className="mb-8">
+                <CardContent className="h-96 flex items-center justify-center">
+                  <p className="text-gray-500">Loading timeline...</p>
+                </CardContent>
+              </Card>
+            ) : dashboardError ? (
+              <Card className="mb-8">
+                <CardContent className="h-96 flex items-center justify-center">
+                  <p className="text-red-500">Failed to load timeline data</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <VoteTimelineCard timeSeries={dashboard?.timeSeries ?? []} />
+            )}
           </TabsContent>
           <TabsContent value="team">
             <Card className="mb-8">

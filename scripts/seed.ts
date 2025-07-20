@@ -89,6 +89,15 @@ async function main() {
     }
   }
   console.log("✅ Seeding complete.");
+
+  // --- AUTOMATION: Update k6/team-ids.json with latest team IDs ---
+  const { execSync } = require("child_process");
+  try {
+    execSync("node scripts/print-teams.js > k6/team-ids.json");
+    console.log("✅ k6/team-ids.json updated with latest team IDs.");
+  } catch (err) {
+    console.error("❌ Failed to update k6/team-ids.json:", err);
+  }
 }
 
 main()

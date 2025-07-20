@@ -168,18 +168,32 @@ export default function VotingForm({
     let votesLeft = VOTE_LIMIT_PER_TRACK - votesCount;
     if (votesLeft < 0) votesLeft = 0;
     return (
-      <Alert className="border-green-200 bg-green-50">
-        <CheckCircle className="h-4 w-4 text-green-600" />
-        <AlertDescription className="text-green-800">
-          <div className="space-y-2">
-            <p className="font-semibold">✅ Vote submitted!</p>
-            <p>Thank you for participating in the voting process.</p>
-            <p className="text-sm">
-              Votes remaining for this track: {votesLeft}
-            </p>
+      <>
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            <div className="space-y-2">
+              <p className="font-semibold">✅ Vote submitted!</p>
+              <p>Thank you for participating in the voting process.</p>
+              <p className="text-sm">
+                Votes remaining for this track: {votesLeft}
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+        <div className="flex justify-center mt-3">
+          <div className="border border-blue-300 rounded-lg px-4 py-3 bg-white shadow-sm hover:shadow-md transition-shadow duration-150">
+            <a
+              href="https://www.jotform.com/build/251951156648060"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-base font-semibold text-blue-700 hover:text-blue-900 transition-colors duration-150 focus:outline-none cursor-pointer"
+            >
+              Join Hyperbyte’s AI Mastery program on 9-10 August 2025!
+            </a>
           </div>
-        </AlertDescription>
-      </Alert>
+        </div>
+      </>
     );
   }
 
