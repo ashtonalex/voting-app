@@ -105,6 +105,7 @@ export default function VoteTimelineCard() {
                 <SelectValue placeholder="Granularity" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="30min">Every 30 min</SelectItem>
                 <SelectItem value="hour">Hourly</SelectItem>
                 <SelectItem value="day">Daily</SelectItem>
               </SelectContent>

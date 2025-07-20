@@ -26,10 +26,19 @@ export const GET = async (request: NextRequest) => {
       });
       const buckets: Record<string, number> = {};
       for (const vote of votes) {
-        const key =
-          timelineGranularity === "day"
-            ? dayjs(vote.createdAt).format("YYYY-MM-DD")
-            : dayjs(vote.createdAt).format("YYYY-MM-DD HH:00");
+        let key: string;
+        if (timelineGranularity === "day") {
+          key = dayjs(vote.createdAt).format("YYYY-MM-DD");
+        } else if (timelineGranularity === "30min") {
+          // Bucket into 30-minute intervals
+          const date = dayjs(vote.createdAt);
+          const minutes = date.minute();
+          const roundedMinutes = minutes < 30 ? "00" : "30";
+          key = date.format(`YYYY-MM-DD HH:${roundedMinutes}`);
+        } else {
+          // Default to hour
+          key = dayjs(vote.createdAt).format("YYYY-MM-DD HH:00");
+        }
         buckets[key] = (buckets[key] || 0) + 1;
       }
       const timeline = Object.entries(buckets).map(([time, count]) => ({
